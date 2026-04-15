@@ -10,22 +10,23 @@ Free, open-source browser extension (MV3). No backend, no paid accounts, no infr
 
 ## Demo
 
-[▶ Watch the live-sync demo (10s, webm)](docs/videos/live-demo.webm) — vault setup, baseline sync, three fresh incoming invoices arriving at the top of the feed with the unread highlight.
+[▶ Download the live-sync demo (10 s, webm, 300 KB)](docs/videos/live-demo.webm) — vault setup, baseline sync, three fresh incoming invoices arriving at the top of the feed with the unread highlight.
 
-## Screenshots
+<details>
+<summary><strong>📸 Screenshots</strong> — click to expand</summary>
 
 <p align="center">
-  <img src="docs/screenshots/popup-status-light.png" alt="Status Tab — light" width="380" />
-  <img src="docs/screenshots/popup-status-dark.png" alt="Status Tab — dark" width="380" />
+  <img src="docs/screenshots/popup-status-light.png" alt="Status Tab — light" width="320" />
+  <img src="docs/screenshots/popup-status-dark.png" alt="Status Tab — dark" width="320" />
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/popup-config-light.png" alt="Config Tab — light" width="380" />
-  <img src="docs/screenshots/popup-config-dark.png" alt="Config Tab — dark" width="380" />
+  <img src="docs/screenshots/popup-config-light.png" alt="Config Tab — light" width="320" />
+  <img src="docs/screenshots/popup-config-dark.png" alt="Config Tab — dark" width="320" />
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/popup-with-new-incoming.png" alt="Fresh incoming invoices highlighted at top of the feed" width="400" />
+  <img src="docs/screenshots/popup-with-new-incoming.png" alt="Fresh incoming invoices highlighted at top of the feed" width="380" />
 </p>
 
 <p align="center">
@@ -35,6 +36,8 @@ Free, open-source browser extension (MV3). No backend, no paid accounts, no infr
 <p align="center">
   <img src="docs/screenshots/sheets-1.jpg" alt="Google Sheets Dashboard" width="700" />
 </p>
+
+</details>
 
 ---
 
@@ -141,19 +144,32 @@ Darmowe rozszerzenie przeglądarki (MV3) o otwartym kodzie źródłowym. Bez bac
 
 ---
 
-## Zrzuty ekranu
+## Demo
+
+[▶ Pobierz nagranie z synchronizacją na żywo (10 s, webm, 300 KB)](docs/videos/live-demo.webm) — konfiguracja sejfu, wstępna synchronizacja, trzy świeże faktury przychodzące pojawiają się na górze listy z wyróżnieniem nieprzeczytanych.
+
+<details>
+<summary><strong>📸 Zrzuty ekranu</strong> — kliknij, by rozwinąć</summary>
 
 <p align="center">
-  <img src="docs/screenshots/status-tab.jpg" alt="Zakładka Status" width="600" />
+  <img src="docs/screenshots/popup-status-light.png" alt="Zakładka Status — jasny" width="320" />
+  <img src="docs/screenshots/popup-status-dark.png" alt="Zakładka Status — ciemny" width="320" />
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/config-tab.jpg" alt="Zakładka Konfiguracja" width="600" />
+  <img src="docs/screenshots/popup-config-light.png" alt="Zakładka Konfiguracja — jasny" width="320" />
+  <img src="docs/screenshots/popup-config-dark.png" alt="Zakładka Konfiguracja — ciemny" width="320" />
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/sheets-1.jpg" alt="Dashboard w Arkuszach Google" width="600" />
+  <img src="docs/screenshots/popup-with-new-incoming.png" alt="Świeże faktury przychodzące wyróżnione na górze listy" width="380" />
 </p>
+
+<p align="center">
+  <img src="docs/screenshots/sheets-1.jpg" alt="Dashboard w Arkuszach Google" width="700" />
+</p>
+
+</details>
 
 ---
 
