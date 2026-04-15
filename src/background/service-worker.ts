@@ -644,13 +644,17 @@ async function handle(msg: Message): Promise<Response> {
         incomingTotal: result.incomingTotal,
         newIncomingCount: result.newIncomingCount,
       };
-      // Persist stats for the popup dashboard.
+      // Persist stats for the popup dashboard. On the first-ever sync we
+      // intentionally store newIncoming=0 + appendedRows=0 so the popup
+      // doesn't display a misleading "+45 new" delta for historical data
+      // that's just being backfilled — consistent with the no-notifications +
+      // mark-all-read first-sync behavior.
       void persistentConfigMod.setLastSyncStats({
         syncedAt: result.syncedAt,
         totalOutgoing: result.totalCount,
         totalIncoming: result.incomingTotal ?? 0,
-        appendedRows: result.appendedRows ?? 0,
-        newIncoming: result.newIncomingCount ?? 0,
+        appendedRows: isFirstSync ? 0 : result.appendedRows ?? 0,
+        newIncoming: isFirstSync ? 0 : result.newIncomingCount ?? 0,
       });
       const appended = result.appendedRows ?? 0;
       if (isFirstSync) {

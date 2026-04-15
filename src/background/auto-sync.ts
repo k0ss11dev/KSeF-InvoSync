@@ -121,13 +121,15 @@ export async function runBackgroundSyncIfReady(opts?: {
       `Auto-sync done: ${result.totalCount} query / ${appended} new rows`,
     );
 
-    // Persist stats for the popup dashboard (was missing — popup showed stale "Last sync").
+    // Persist stats for the popup dashboard. On first sync we zero the
+    // delta fields so the popup doesn't show a misleading "+N new" badge
+    // for historical backfill — same rationale as the manual sync path.
     void persistentConfig.setLastSyncStats({
       syncedAt: result.syncedAt,
       totalOutgoing: result.totalCount,
       totalIncoming: result.incomingTotal ?? 0,
-      appendedRows: appended,
-      newIncoming: result.newIncomingCount ?? 0,
+      appendedRows: isFirstSync ? 0 : appended,
+      newIncoming: isFirstSync ? 0 : result.newIncomingCount ?? 0,
     });
 
     // Update badge: show unread count if new incoming, else clear.

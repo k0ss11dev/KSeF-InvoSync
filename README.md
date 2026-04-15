@@ -8,18 +8,32 @@ Free, open-source browser extension (MV3). No backend, no paid accounts, no infr
 
 ---
 
+## Demo
+
+[▶ Watch the live-sync demo (10s, webm)](docs/videos/live-demo.webm) — vault setup, baseline sync, three fresh incoming invoices arriving at the top of the feed with the unread highlight.
+
 ## Screenshots
 
 <p align="center">
-  <img src="docs/screenshots/status-tab.jpg" alt="Status Tab" width="600" />
+  <img src="docs/screenshots/popup-status-light.png" alt="Status Tab — light" width="380" />
+  <img src="docs/screenshots/popup-status-dark.png" alt="Status Tab — dark" width="380" />
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/config-tab.jpg" alt="Config Tab" width="600" />
+  <img src="docs/screenshots/popup-config-light.png" alt="Config Tab — light" width="380" />
+  <img src="docs/screenshots/popup-config-dark.png" alt="Config Tab — dark" width="380" />
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/sheets-1.jpg" alt="Google Sheets Dashboard" width="600" />
+  <img src="docs/screenshots/popup-with-new-incoming.png" alt="Fresh incoming invoices highlighted at top of the feed" width="400" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/options-page.png" alt="Options page" width="700" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/sheets-1.jpg" alt="Google Sheets Dashboard" width="700" />
 </p>
 
 ---

@@ -10,6 +10,7 @@ tests/.profile-real/
 tests/fixtures/*.local
 tests/fixtures/.seed-invoice-*.xml
 manifests/*.key.local
+screenshots-auto/
 POMYSLY.md
 docs/slides/
 docs/STORE-LISTING.md

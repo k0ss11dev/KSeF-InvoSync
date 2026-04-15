@@ -95,7 +95,7 @@ html, body {
   .logs-pre { background: #030712; color: #e5e7eb; }
 }
 
-/* Remove default scrollbar gutters in the popup */
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.2); border-radius: 4px; }
-[data-theme="dark"] ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); }
+/* Hide scrollbars completely — keeps content scrollable but no visible track,
+   so popup screenshots / videos don't show empty gutter columns. */
+* { scrollbar-width: none; }
+*::-webkit-scrollbar { display: none; width: 0; height: 0; }
