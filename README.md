@@ -10,7 +10,11 @@ Free, open-source browser extension (MV3). No backend, no paid accounts, no infr
 
 ## Demo
 
-[▶ Download the live-sync demo (10 s, webm, 300 KB)](docs/videos/live-demo.webm) — vault setup, baseline sync, three fresh incoming invoices arriving at the top of the feed with the unread highlight.
+<p align="center">
+  <img src="docs/videos/live-demo.gif" alt="Live demo: three fresh incoming invoices arriving in the popup feed with unread highlight" width="320" />
+</p>
+
+Vault setup, baseline sync, then three fresh incoming invoices arrive at the top of the feed with the unread highlight. Higher-quality original: [webm](docs/videos/live-demo.webm) · [mp4](docs/videos/live-demo.mp4).
 
 <details>
 <summary><strong>📸 Screenshots</strong> — click to expand</summary>
@@ -146,7 +150,11 @@ Darmowe rozszerzenie przeglądarki (MV3) o otwartym kodzie źródłowym. Bez bac
 
 ## Demo
 
-[▶ Pobierz nagranie z synchronizacją na żywo (10 s, webm, 300 KB)](docs/videos/live-demo.webm) — konfiguracja sejfu, wstępna synchronizacja, trzy świeże faktury przychodzące pojawiają się na górze listy z wyróżnieniem nieprzeczytanych.
+<p align="center">
+  <img src="docs/videos/live-demo.gif" alt="Demo na żywo: trzy świeże faktury przychodzące pojawiają się na górze listy w popupie z wyróżnieniem nieprzeczytanych" width="320" />
+</p>
+
+Konfiguracja sejfu, wstępna synchronizacja, następnie trzy świeże faktury przychodzące pojawiają się na górze listy z wyróżnieniem nieprzeczytanych. Oryginał w lepszej jakości: [webm](docs/videos/live-demo.webm) · [mp4](docs/videos/live-demo.mp4).
 
 <details>
 <summary><strong>📸 Zrzuty ekranu</strong> — kliknij, by rozwinąć</summary>
