@@ -10,6 +10,8 @@ KSeF InvoSync is a free, open-source browser extension that syncs invoices from 
 
 All data stays between your browser, the KSeF government API, and your Google account.
 
+**Google integrations are entirely optional and OFF until you connect.** The extension will not contact any Google service unless you explicitly click "Connect Google" in the popup. Without Google connected, the extension still works locally — it can authenticate with KSeF, fetch invoices, show them in the in-popup feed, and send notifications. The Google Sheets sync, Google Drive sheet picker, and Google Calendar features only become active after you opt in by connecting your account.
+
 ## What data the extension handles
 
 ### KSeF token (your authentication credential)
@@ -22,12 +24,14 @@ All data stays between your browser, the KSeF government API, and your Google ac
 - Optionally, the derived key (not the passphrase itself) can be cached in `chrome.storage.local` (the "Remember passphrase" option) to survive browser restarts
 
 ### Google OAuth tokens
+- **Opt-in:** No Google token exists until you click "Connect Google" in the extension popup. The extension will never contact a Google API on its own — Sheets sync, Drive picker, and Calendar features stay dormant until you connect.
 - **Stored:** In your browser's `chrome.storage.local` (unencrypted, per standard OAuth practice)
 - **Obtained via:** Google's standard OAuth 2.0 + PKCE flow using `chrome.identity.launchWebAuthFlow`
 - **Transmitted to:** `accounts.google.com`, `oauth2.googleapis.com`, `sheets.googleapis.com`, `www.googleapis.com` (for Drive API)
 - **Scopes requested:** `userinfo.email`, `userinfo.profile`, `drive.file`, `spreadsheets`, `calendar.events`, `calendar.calendarlist.readonly`
 - **Note:** `drive.file` is a restricted scope — the extension only sees spreadsheets it created, never other files in your Drive
 - **Note:** `calendar.calendarlist.readonly` is used only to populate the "Target calendar" dropdown in settings. It reads the names/IDs of calendars you own — never event contents.
+- **Disconnecting:** "Disconnect Google" in the popup wipes the token from local storage and revokes it server-side. You can also revoke at https://myaccount.google.com/permissions independently.
 
 ### Invoice data
 - **Source:** Your own invoices from KSeF (queries `/invoices/query/metadata` endpoint)
