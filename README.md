@@ -63,7 +63,6 @@ Free, open-source browser extension (MV3). No backend, no paid accounts, no infr
 - esbuild (no Vite, no webpack)
 - Web Crypto API (PBKDF2, AES-GCM, RSA-OAEP)
 - Playwright e2e tests in Docker
-- 174 tests, 0 failures
 
 ## Development
 
