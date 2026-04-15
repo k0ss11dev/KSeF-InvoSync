@@ -1,6 +1,6 @@
 # Privacy Policy — KSeF InvoSync
 
-**Last updated:** 2026-04-12
+**Last updated:** 2026-04-15
 
 ## Summary
 
@@ -35,6 +35,21 @@ All data stays between your browser, the KSeF government API, and your Google ac
 - **Intermediate storage:** Recent incoming invoices are cached in `chrome.storage.local` for the in-popup feed (up to 50 items, can be cleared manually)
 - **Tracked KSeF reference numbers:** Stored per-spreadsheet to prevent duplicate appends
 - **Never sent to any third party**
+
+### Google Calendar events (opt-in feature)
+- **Trigger:** Created **only when you click the "Add to Calendar" button** on a specific incoming invoice. Never created automatically.
+- **Created on:** The Google Calendar you select in the extension's settings (defaults to your primary calendar). The extension never creates events on calendars you didn't explicitly pick.
+- **Event contents:**
+  - Title: invoice number + gross amount + currency
+  - Description: seller name + NIP, buyer name + NIP, net / VAT / gross amounts, KSeF invoice number
+  - Date: invoice payment due date (`TerminPlatnosci/Termin` from the FA(3) XML), all-day event
+  - Reminders: two pop-up reminders, 3 days before and 1 day before the due date
+- **Mapping stored locally:** When an event is created, the extension stores `{ksefNumber → {eventId, htmlLink, calendarId, addedAt}}` in `chrome.storage.local` (key: `config.invoiceCalendarEvents`). This is used to (a) prevent creating duplicate events for the same invoice, and (b) let you click a feed item's calendar icon to jump straight to the existing event.
+- **What the extension does NOT do with Calendar:**
+  - Never reads, lists, modifies, or deletes events you didn't create through this button
+  - Never reads other people's events on shared calendars
+  - Never accesses event attendees, reminders, or details on existing events
+- **Disabling the feature:** A master toggle in the Config tab ("Add invoice due dates to Google Calendar") removes the button entirely. Existing event mappings stay in `chrome.storage.local` until you "Reset everything" (events on your calendar are not deleted — uninstall doesn't touch your Calendar).
 
 ### Configuration (non-sensitive)
 - Auto-sync interval, notification preferences, language choice, dark/light mode, selected KSeF environment, target spreadsheet ID, target Google Calendar ID, "catch up on resume" toggle
@@ -74,6 +89,7 @@ These services have their own privacy policies. The extension uses their public 
 - **KSeF token:** Until you click "Disconnect KSeF" or destroy the vault
 - **Google tokens:** Until you click "Disconnect Google" or revoke access via Google Account settings
 - **Incoming invoice feed:** Up to 50 most recent items; can be cleared manually ("Clear all" button) or wiped via "Reset everything"
+- **Calendar event mapping** (`config.invoiceCalendarEvents`): Until you "Reset everything" or uninstall. Events created on Google Calendar are not deleted by the extension — manage them in Google Calendar directly.
 - **All stored data:** Removed when you uninstall the extension
 
 ## Your rights
