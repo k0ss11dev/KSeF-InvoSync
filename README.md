@@ -47,26 +47,38 @@ Vault setup, baseline sync, then three fresh incoming invoices arrive at the top
 
 ## Features
 
-- **Auto-sync** — pulls invoices from KSeF every 30min / 1h / 3h / 6h in the background
-- **Outgoing + Incoming** — separate tabs in the same Google Sheet (Subject1 + Subject2)
-- **Incoming invoice feed** — messenger-style list with unread badges, click to view
-- **Invoice viewer** — inline FA(3) XML parser: seller, buyer, line items, due-date banner
-- **Add to Calendar** — one click adds the payment due date to your Google Calendar (with 3-day + 1-day reminders); target calendar is user-pickable in settings
-- **Catch-up on resume** — pulls fresh data automatically when the browser starts or the computer wakes from sleep, if the last sync is older than the configured interval
-- **Diagnostic logs viewer** — in-memory ring buffer of SW events with Copy-to-clipboard, for bug reports
+- 🔄 **Sync invoices from KSeF** — outgoing and incoming, with desktop notifications when new ones arrive
+- 📊 **Send to Google Sheets** — your own spreadsheet, your own account, dashboard with totals + charts
+- 📅 **Add to Google Calendar** — payment due dates land on the calendar of your choice with reminders
+- ⏱ **Runs in the background** — auto-syncs on a schedule even when the popup isn't open; catches up after browser wake or sleep
+- 🔒 **Local-only, encrypted** — KSeF token encrypted with your passphrase; no backend, no telemetry, no servers we control
+
+<details>
+<summary><strong>Full feature list</strong> — click to expand</summary>
+
+- **Auto-sync** — pulls invoices from KSeF every 30 min / 1 h / 3 h / 6 h in the background (configurable)
+- **Outgoing + Incoming tabs** — Subject1 + Subject2 queries written to separate sheet tabs
+- **Incoming invoice feed** — messenger-style list in the popup with unread badges, click to view
+- **Invoice viewer** — inline FA(3) XML parser: seller, buyer, line items, totals, due-date banner
+- **Add to Calendar** — one click adds the payment due date to your Google Calendar with 3-day + 1-day reminders; target calendar is user-pickable
+- **Catch-up on resume** — pulls fresh data when the browser starts or the computer wakes from sleep, if the last sync is older than the configured interval
+- **Diagnostic logs viewer** — in-memory ring buffer of service-worker events with Copy-to-clipboard, for bug reports
 - **Dashboard** — auto-computed totals (net, VAT, gross, balance) + 5 charts
-- **Dedup** — only new invoices are appended, no duplicates ever
-- **Notifications** — Chrome notifications for new invoices, sync results, errors (configurable)
-- **Encrypted vault** — KSeF token encrypted with PBKDF2 + AES-GCM, passphrase-protected
+- **Dedup** — only new invoices are appended, never duplicates
+- **Notifications** — Chrome desktop notifications for new invoices, sync results, errors (each toggleable)
+- **Encrypted vault** — KSeF token encrypted with PBKDF2 (310 k iterations) + AES-256-GCM, passphrase-protected
 - **Remember passphrase** — optional, survives browser restart for unattended auto-sync
 - **Dark mode** — MUI theme, follows system or manual toggle
 - **i18n** — English + Polish, switchable in settings
 - **KSeF environment switch** — test / demo / production
 - **Connection test** — verify your KSeF token works before syncing
 - **Sheet picker** — choose which spreadsheet to sync to, or create a new one
-- **Status badge** — colored dot on the extension icon shows sync health
-- **Progress bar** — visual countdown to next auto-sync
+- **Per-direction sheet sync toggles** — write outgoing only, incoming only, or both
+- **Status badge** — colored dot on the extension icon shows sync health at a glance
+- **Progress bar** — visual countdown to the next auto-sync
 - **GPL-3.0** — free software, no commercial reuse without sharing code
+
+</details>
 
 ## Quick Start
 
@@ -183,22 +195,38 @@ Konfiguracja sejfu, wstępna synchronizacja, następnie trzy świeże faktury pr
 
 ## Funkcje
 
-- **Auto-sync** — pobiera faktury z KSeF co 30min / 1h / 3h / 6h w tle
+- 🔄 **Synchronizacja faktur z KSeF** — wychodzące i przychodzące, z powiadomieniami systemowymi o nowych
+- 📊 **Eksport do Arkuszy Google** — Twój własny arkusz, Twoje konto, dashboard z podsumowaniami i wykresami
+- 📅 **Dodawanie do Kalendarza Google** — terminy płatności trafiają do wybranego kalendarza z przypomnieniami
+- ⏱ **Działa w tle** — automatyczna synchronizacja co ustalony interwał, nawet gdy popup nie jest otwarty; nadrabia po wybudzeniu / starcie przeglądarki
+- 🔒 **Lokalnie i zaszyfrowane** — token KSeF zaszyfrowany Twoim hasłem; brak backendu, telemetrii, serwerów po naszej stronie
+
+<details>
+<summary><strong>Pełna lista funkcji</strong> — kliknij, by rozwinąć</summary>
+
+- **Auto-sync** — pobiera faktury z KSeF co 30 min / 1 h / 3 h / 6 h w tle (konfigurowalny)
 - **Wychodzące + Przychodzące** — osobne zakładki w tym samym arkuszu Google (Subject1 + Subject2)
 - **Feed faktur przychodzących** — lista w stylu komunikatora z oznaczeniem nieprzeczytanych
+- **Podgląd faktury** — parser FA(3) XML w popupie: sprzedawca, nabywca, pozycje, podsumowania, baner z terminem
+- **Dodaj do Kalendarza** — jednym kliknięciem dodaje termin płatności do Kalendarza Google z przypomnieniami 3 dni i 1 dzień przed
+- **Nadrabianie po wybudzeniu** — pobiera świeże dane gdy przeglądarka startuje lub komputer się budzi, jeśli minął interwał synchronizacji
+- **Podgląd logów diagnostycznych** — bufor zdarzeń service-workera z kopiowaniem do schowka, do zgłaszania błędów
 - **Dashboard** — automatyczne podsumowania (netto, VAT, brutto, saldo) + 5 wykresów
 - **Deduplikacja** — tylko nowe faktury trafiają do arkusza, nigdy duplikaty
-- **Powiadomienia** — powiadomienia Chrome o nowych fakturach, wynikach synchronizacji, błędach
-- **Szyfrowany sejf** — token KSeF zaszyfrowany PBKDF2 + AES-GCM, chroniony hasłem
+- **Powiadomienia** — powiadomienia Chrome o nowych fakturach, wynikach synchronizacji, błędach (każde przełączalne)
+- **Szyfrowany sejf** — token KSeF zaszyfrowany PBKDF2 (310 tys. iteracji) + AES-256-GCM, chroniony hasłem
 - **Zapamiętaj hasło** — opcjonalnie, przetrwa restart przeglądarki dla auto-sync
 - **Tryb ciemny** — motyw MUI, podąża za systemem lub ręczny przełącznik
 - **i18n** — angielski + polski, przełączanie w ustawieniach
 - **Przełącznik środowiska KSeF** — test / demo / produkcja
 - **Test połączenia** — sprawdź czy token KSeF działa przed synchronizacją
 - **Wybór arkusza** — wybierz do którego arkusza synchronizować lub utwórz nowy
+- **Przełączniki kierunku synchronizacji** — tylko wychodzące, tylko przychodzące, lub oba
 - **Ikona statusu** — kolorowa kropka na ikonie rozszerzenia pokazuje stan synchronizacji
 - **Pasek postępu** — wizualne odliczanie do następnej auto-synchronizacji
 - **GPL-3.0** — wolne oprogramowanie, brak komercyjnego użycia bez udostępnienia kodu
+
+</details>
 
 ## Szybki start
 
