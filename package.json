@@ -1,0 +1,41 @@
+{
+  "name": "invo-sync",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Cross-browser MV3 extension: KSeF (test env) → Google Sheets. M0 = OAuth skeleton.",
+  "license": "GPL-3.0-or-later",
+  "author": "k0ss11",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "build:chrome": "node scripts/build.mjs chrome",
+    "build:firefox": "node scripts/build.mjs firefox",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build:chrome && playwright test",
+    "test:unit": "playwright test --project=unit",
+    "test:e2e": "npm run build:chrome && playwright test --project=e2e",
+    "test:docker": "docker compose run --rm test",
+    "test:docker:unit": "docker compose run --rm test sh -c \"npm install --prefer-offline --no-audit --no-fund --silent && npm run test:unit\"",
+    "test:docker:e2e": "docker compose run --rm test sh -c \"npm install --prefer-offline --no-audit --no-fund --silent && xvfb-run -a npm run test:e2e\"",
+    "test:docker:shell": "docker compose run --rm test bash",
+    "test:docker:clean": "docker compose down -v",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\""
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.47.0",
+    "@types/chrome": "^0.0.268",
+    "@types/node": "^20.14.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.5.4"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^9.0.0",
+    "@mui/material": "^9.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}

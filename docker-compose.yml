@@ -1,0 +1,37 @@
+# Test harness container for Tier 1-3 tests (unit + smoke + mocked OAuth).
+# Tier 4 (real Google + real KSeF credentials) runs on the host browser
+# instead — see README → "Real-credential tests".
+#
+# Why headless: false inside Docker?
+#   Chromium MV3 extensions don't work in headless mode (we proved this on
+#   2026-04-11). The Microsoft Playwright image ships with Xvfb pre-installed
+#   for exactly this case. We wrap the test command with `xvfb-run -a` so
+#   Chromium gets a virtual display inside the container, and no windows
+#   ever surface to the host.
+#
+# Why a named volume for node_modules?
+#   The host runs Windows, so the host's node_modules has Windows binaries
+#   (esbuild-win32-x64, etc) that are useless inside the Linux container.
+#   Mounting a named volume at /work/node_modules isolates the container's
+#   Linux node_modules from the host's Windows ones, so both can coexist.
+
+services:
+  test:
+    image: mcr.microsoft.com/playwright:v1.59.1-jammy
+    working_dir: /work
+    init: true
+    volumes:
+      - .:/work
+      - invo-sync-node-modules:/work/node_modules
+    environment:
+      - CI=true
+    # Default command: install (fast on cache hit) + build + run all tests
+    # under Xvfb. Override on the command line for unit-only / e2e-only:
+    #   docker compose run --rm test xvfb-run -a npm run test:unit
+    #   docker compose run --rm test xvfb-run -a npm run test:e2e
+    command: >
+      sh -c "npm install --prefer-offline --no-audit --no-fund --silent &&
+             xvfb-run -a npm test"
+
+volumes:
+  invo-sync-node-modules:

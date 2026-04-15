@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.env
+*.log
+*.tsbuildinfo
+test-results/
+playwright-report/
+.playwright/
+tests/.profile-real/
+tests/fixtures/*.local
+tests/fixtures/.seed-invoice-*.xml
+manifests/*.key.local
+POMYSLY.md
+docs/slides/
+docs/STORE-LISTING.md
+.DS_Store
+Thumbs.db
