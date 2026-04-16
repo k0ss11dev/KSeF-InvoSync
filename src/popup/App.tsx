@@ -93,9 +93,9 @@ export function App() {
     <div className="app">
       <MuiStack
         direction="row"
-        alignItems="center"
         spacing={1}
         sx={{
+          alignItems: "center",
           px: 2,
           py: 1.25,
           borderBottom: 1,
@@ -256,7 +256,7 @@ function StatusTab({ ksefWebApp }: { ksefWebApp: string }) {
         <MuiTypography variant="body2" color="text.secondary">
           {t("unlock_description")}
         </MuiTypography>
-        <MuiStack direction="row" spacing={1} alignItems="center">
+        <MuiStack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <MuiTextField
             type="password"
             size="small"
@@ -351,12 +351,9 @@ function StatusTab({ ksefWebApp }: { ksefWebApp: string }) {
       {/* Incoming feed header — title left, action icons right, single row */}
       <MuiStack
         direction="row"
-        alignItems="center"
-        justifyContent="space-between"
-        flexWrap="nowrap"
-        sx={{ px: 2, py: 1, minHeight: 44 }}
+        sx={{ alignItems: "center", justifyContent: "space-between", flexWrap: "nowrap", px: 2, py: 1, minHeight: 44 }}
       >
-        <MuiStack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 0, flex: 1 }}>
+        <MuiStack direction="row" spacing={1} sx={{ alignItems: "center", minWidth: 0, flex: 1 }}>
           <MuiTypography
             variant="subtitle2"
             sx={{
@@ -420,7 +417,7 @@ function StatusTab({ ksefWebApp }: { ksefWebApp: string }) {
               onClick={() => setViewingInvoice(inv.ksefNumber)}
               sx={{ py: 1, px: 2, display: "block" }}
             >
-              <MuiStack direction="row" justifyContent="space-between" alignItems="baseline" sx={{ mb: 0.25 }}>
+              <MuiStack direction="row" sx={{ justifyContent: "space-between", alignItems: "baseline", mb: 0.25 }}>
                 <MuiTypography variant="body2" sx={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", pr: 1 }}>
                   {inv.sellerName || inv.sellerNip}
                 </MuiTypography>
@@ -428,7 +425,7 @@ function StatusTab({ ksefWebApp }: { ksefWebApp: string }) {
                   {inv.grossAmount.toLocaleString()} {inv.currency}
                 </MuiTypography>
               </MuiStack>
-              <MuiStack direction="row" justifyContent="space-between" alignItems="baseline">
+              <MuiStack direction="row" sx={{ justifyContent: "space-between", alignItems: "baseline" }}>
                 <MuiTypography variant="caption" color="text.secondary" sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", pr: 1 }}>
                   {inv.invoiceNumber}
                 </MuiTypography>
@@ -484,7 +481,7 @@ function StatusTab({ ksefWebApp }: { ksefWebApp: string }) {
       </MuiList>
 
       {/* Action row: interval select + open sheet + sync */}
-      <MuiStack direction="row" spacing={1} alignItems="center" sx={{ p: 1.5, borderTop: 1, borderColor: "divider" }}>
+      <MuiStack direction="row" spacing={1} sx={{ alignItems: "center", p: 1.5, borderTop: 1, borderColor: "divider" }}>
         <SyncIntervalSelect />
         {sheetsEnabled && sheetUrl && (
           <MuiIconButton
@@ -615,7 +612,7 @@ function InvoiceViewer({
               )}
 
               <MuiStack direction="row" spacing={2} divider={<MuiDivider orientation="vertical" flexItem />} sx={{ mb: 2 }}>
-                <MuiStack flex={1} spacing={0.5} sx={{ minWidth: 0 }}>
+                <MuiStack spacing={0.5} sx={{ flex: 1, minWidth: 0 }}>
                   <MuiTypography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.8, color: "text.secondary", textTransform: "uppercase" }}>
                     {t("invoice_seller")}
                   </MuiTypography>
@@ -623,7 +620,7 @@ function InvoiceViewer({
                   <MuiTypography variant="body2" color="text.secondary">NIP {inv.seller.nip}</MuiTypography>
                   <MuiTypography variant="body2" color="text.secondary" sx={{ lineHeight: 1.4 }}>{inv.seller.address}</MuiTypography>
                 </MuiStack>
-                <MuiStack flex={1} spacing={0.5} sx={{ minWidth: 0 }}>
+                <MuiStack spacing={0.5} sx={{ flex: 1, minWidth: 0 }}>
                   <MuiTypography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.8, color: "text.secondary", textTransform: "uppercase" }}>
                     {t("invoice_buyer")}
                   </MuiTypography>
@@ -660,7 +657,7 @@ function InvoiceViewer({
                 </MuiTable>
               </MuiTableContainer>
 
-              <MuiStack spacing={0.5} alignItems="flex-end" sx={{ mt: 2 }}>
+              <MuiStack spacing={0.5} sx={{ alignItems: "flex-end", mt: 2 }}>
                 <MuiTypography variant="body1">
                   {t("invoice_net")}: <strong>{inv.totals.net.toLocaleString()} {inv.currency}</strong>
                 </MuiTypography>
@@ -717,7 +714,7 @@ function AdvancedSettingsLink() {
   return (
     <MuiCard variant="outlined" sx={{ mb: 1.5 }}>
       <MuiCardContent sx={{ py: 1.5, "&:last-child": { pb: 1.5 } }}>
-        <MuiStack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+        <MuiStack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "space-between" }}>
           <MuiStack spacing={0.25}>
             <MuiTypography variant="subtitle2" sx={{ fontWeight: 600 }}>
               {t("config_advanced_title")}
@@ -851,7 +848,7 @@ function SheetsConfig() {
                 label={<MuiTypography variant="caption">{t("config_sheets_incoming")}</MuiTypography>}
               />
             </MuiStack>
-            <MuiStack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+            <MuiStack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "space-between" }}>
               <MuiTypography variant="caption">
                 {t("picker_target")}{" "}
                 {target ? (
@@ -1066,11 +1063,11 @@ function LogsConfig() {
   return (
     <MuiCard variant="outlined" sx={{ mb: 1.5 }}>
       <MuiCardContent sx={{ py: 1.5, "&:last-child": { pb: 1.5 } }}>
-        <MuiStack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+        <MuiStack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "space-between" }}>
           <MuiTypography variant="subtitle2" sx={{ fontWeight: 600 }}>
             {t("options_logs_title")}
           </MuiTypography>
-          <MuiStack direction="row" spacing={0.5} alignItems="center">
+          <MuiStack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
             <MuiIconButton
               size="small"
               onClick={toggle}
@@ -1143,7 +1140,7 @@ function GoogleConfig() {
           </MuiButton>
         )}
         {status?.connected && (
-          <MuiStack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+          <MuiStack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "space-between" }}>
             <MuiTypography variant="caption" sx={{ color: "success.main" }}>{status.email}</MuiTypography>
             <MuiButton
               size="small"
@@ -1240,7 +1237,7 @@ function VaultConfig() {
           </MuiStack>
         )}
         {vault?.initialized && vault.unlocked && (
-          <MuiStack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+          <MuiStack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "space-between" }}>
             <MuiTypography variant="caption" sx={{ color: "success.main" }}>{t("vault_unlocked")}</MuiTypography>
             <MuiButton size="small" variant="outlined" onClick={() => {
               void send({ type: "vault.destroy" }).then(() => refresh());
@@ -1248,7 +1245,7 @@ function VaultConfig() {
           </MuiStack>
         )}
         {vault?.initialized && !vault.unlocked && (
-          <MuiStack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+          <MuiStack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "space-between" }}>
             <MuiTypography variant="caption" color="text.secondary">{t("vault_locked")}</MuiTypography>
             <MuiButton size="small" variant="outlined" onClick={() => {
               void send({ type: "vault.destroy" }).then(() => refresh());
@@ -1538,7 +1535,7 @@ function CalendarButton({ invoice, ksefNumber }: { invoice: import("../ksef/fa3-
   }
   if (state === "error") {
     return (
-      <MuiStack spacing={0.5} alignItems="flex-start">
+      <MuiStack spacing={0.5} sx={{ alignItems: "flex-start" }}>
         <MuiButton
           variant="outlined"
           size="small"

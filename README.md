@@ -119,24 +119,8 @@ npm run test:docker
 
 ### Environment Variables
 
-Copy `.env.example` → `.env` and fill in:
-
-```
-GOOGLE_CLIENT_ID=your-oauth-client-id
-GOOGLE_CLIENT_SECRET=your-oauth-client-secret
-```
-
-### Google OAuth Setup
-
-1. Go to [Google Cloud Console → Credentials](https://console.cloud.google.com/apis/credentials)
-2. Create an OAuth 2.0 Client ID — choose **"Web application"** type (required because the extension uses `chrome.identity.launchWebAuthFlow`, not `getAuthToken`)
-3. Add an **Authorized redirect URI**: `https://<your-extension-id>.chromiumapp.org/`
-4. Copy the **Client ID** and **Client Secret** into your `.env`
-
-> **Security note for fork authors:**
-> - The `client_secret` for installed/desktop/extension OAuth is treated by Google as a [public identifier](https://developers.google.com/identity/protocols/oauth2/native-app#creatingcred), not a true secret — it ships inside every built extension. PKCE protects the actual token exchange.
-> - **Do not** reuse your production Web application credentials. Create a separate OAuth client specifically for the extension.
-> - The `GOOGLE_CLIENT_SECRET` field is optional — if your OAuth client type is "Chrome extension" (which uses `getAuthToken` instead), leave it blank. This codebase uses `launchWebAuthFlow` + PKCE, which requires "Web application" type with a secret.
+Copy `.env.example` → `.env` and fill in your Google OAuth credentials.
+See [docs/OAUTH-SETUP.md](docs/OAUTH-SETUP.md) for the full step-by-step guide (which client type, redirect URI, required APIs, troubleshooting).
 
 ## Architecture
 

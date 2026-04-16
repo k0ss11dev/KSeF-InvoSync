@@ -69,7 +69,7 @@ function send<T = unknown>(msg: Message): Promise<Response<T>> {
 export function Options() {
   return (
     <MuiContainer maxWidth="sm" sx={{ py: 3 }}>
-      <MuiStack direction="row" alignItems="center" spacing={1} sx={{ mb: 3 }}>
+      <MuiStack direction="row" spacing={1} sx={{ alignItems: "center", mb: 3 }}>
         <MuiTypography variant="h4" sx={{ fontWeight: 700, flex: 1 }}>{t("app_title")}</MuiTypography>
         <MuiChip size="small" color="warning" label={t("env_badge_settings")} />
       </MuiStack>
@@ -206,7 +206,7 @@ function GoogleSection() {
         )}
         {status?.connected && (
           <MuiStack spacing={2}>
-            <MuiStack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+            <MuiStack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "space-between" }}>
               <MuiTypography variant="body2">{t("google_connected_as", status.email)}</MuiTypography>
               <MuiButton variant="outlined" color="error" size="small" disabled={busy} onClick={disconnect}>
                 {t("google_disconnect_full")}
@@ -332,7 +332,7 @@ function SyncSection() {
                 }
                 label={t("autosync_label_options", String(config.periodMinutes))}
               />
-              <MuiStack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+              <MuiStack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "space-between" }}>
                 <MuiTypography variant="body2">{t("options_sync_interval")}</MuiTypography>
                 <MuiFormControl size="small" sx={{ minWidth: 120 }}>
                   <MuiSelect
@@ -369,7 +369,7 @@ function SyncSection() {
             </>
           )}
           {target !== undefined && (
-            <MuiStack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+            <MuiStack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "space-between" }}>
               <MuiTypography variant="body2">
                 {t("options_target_sheet")}{" "}
                 {target ? (
@@ -498,7 +498,7 @@ function VaultSection() {
             <MuiTypography variant="body2" color="text.secondary">{t("vault_locked")}</MuiTypography>
           )}
           {status?.initialized && status.unlocked && (
-            <MuiStack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+            <MuiStack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "space-between" }}>
               <MuiTypography variant="body2" sx={{ color: "success.main" }}>{t("vault_unlocked")}</MuiTypography>
               <MuiButton variant="outlined" size="small" disabled={busy} onClick={lock}>
                 {t("button_lock")}
@@ -566,9 +566,9 @@ function LogsSection() {
   return (
     <MuiCard variant="outlined">
       <MuiCardContent>
-        <MuiStack direction="row" alignItems="center" justifyContent="space-between" spacing={1} sx={{ mb: 1 }}>
+        <MuiStack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "space-between", mb: 1 }}>
           <MuiTypography variant="h6">{t("options_logs_title")}</MuiTypography>
-          <MuiStack direction="row" spacing={0.5} alignItems="center">
+          <MuiStack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
             <MuiIconButton
               size="small"
               onClick={toggle}
@@ -659,8 +659,8 @@ function DangerZone() {
 
         {!done && (
           <MuiStack spacing={2}>
-            <MuiStack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
-              <MuiStack spacing={0.5} flex={1}>
+            <MuiStack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "space-between" }}>
+              <MuiStack spacing={0.5} sx={{ flex: 1 }}>
                 <MuiTypography variant="body2" sx={{ fontWeight: 600 }}>{t("danger_destroy_vault")}</MuiTypography>
                 <MuiTypography variant="caption" color="text.secondary">{t("danger_destroy_vault_desc")}</MuiTypography>
               </MuiStack>
@@ -680,8 +680,8 @@ function DangerZone() {
               )}
             </MuiStack>
 
-            <MuiStack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
-              <MuiStack spacing={0.5} flex={1}>
+            <MuiStack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "space-between" }}>
+              <MuiStack spacing={0.5} sx={{ flex: 1 }}>
                 <MuiTypography variant="body2" sx={{ fontWeight: 600 }}>{t("danger_reset_all")}</MuiTypography>
                 <MuiTypography variant="caption" color="text.secondary">{t("danger_reset_all_desc")}</MuiTypography>
               </MuiStack>
