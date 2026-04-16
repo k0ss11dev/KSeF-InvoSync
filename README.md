@@ -37,10 +37,6 @@ Vault setup, baseline sync, then three fresh incoming invoices arrive at the top
   <img src="docs/screenshots/options-page.png" alt="Options page" width="700" />
 </p>
 
-<p align="center">
-  <img src="docs/screenshots/sheets-1.jpg" alt="Google Sheets Dashboard" width="700" />
-</p>
-
 </details>
 
 ---
@@ -162,8 +158,6 @@ Darmowe rozszerzenie przeglądarki (MV3) o otwartym kodzie źródłowym. Bez bac
   <img src="docs/videos/live-demo.gif?v=2" alt="Demo na żywo: trzy świeże faktury przychodzące pojawiają się na górze listy w popupie z wyróżnieniem nieprzeczytanych" width="320" />
 </p>
 
-Konfiguracja sejfu, wstępna synchronizacja, następnie trzy świeże faktury przychodzące pojawiają się na górze listy z wyróżnieniem nieprzeczytanych. Oryginał w lepszej jakości: [webm](docs/videos/live-demo.webm) · [mp4](docs/videos/live-demo.mp4).
-
 <details>
 <summary><strong>📸 Zrzuty ekranu</strong> — kliknij, by rozwinąć</summary>
 
@@ -179,10 +173,6 @@ Konfiguracja sejfu, wstępna synchronizacja, następnie trzy świeże faktury pr
 
 <p align="center">
   <img src="docs/screenshots/popup-with-new-incoming.png" alt="Świeże faktury przychodzące wyróżnione na górze listy" width="380" />
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/sheets-1.jpg" alt="Dashboard w Arkuszach Google" width="700" />
 </p>
 
 </details>
