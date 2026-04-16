@@ -26,6 +26,7 @@ import {
   randomSalt,
 } from "./crypto";
 import { getRememberVault } from "./persistent-config";
+import { log } from "../shared/logger";
 
 const META_KEY = "vault.meta";
 const ENTRIES_KEY = "vault.entries";
@@ -139,17 +140,35 @@ export async function restoreFromSession(): Promise<boolean> {
   try {
     // Try session first (covers SW suspension within same browser session).
     const sessionResult = await chrome.storage.session.get(SESSION_KEY_CACHE);
-    let jwk = sessionResult[SESSION_KEY_CACHE] as JsonWebKey | undefined;
-    // If session is empty, try local (covers browser restart when "remember" is on).
-    if (!jwk) {
-      const localResult = await chrome.storage.local.get(LOCAL_KEY_CACHE);
-      jwk = localResult[LOCAL_KEY_CACHE] as JsonWebKey | undefined;
+    const jwk = sessionResult[SESSION_KEY_CACHE] as JsonWebKey | undefined;
+    if (jwk) {
+      unlockedKey = await importKeyFromJwk(jwk);
+      return true;
     }
-    if (!jwk) return false;
-    unlockedKey = await importKeyFromJwk(jwk);
-    // Re-populate session cache so subsequent SW wakes are fast.
-    await chrome.storage.session.set({ [SESSION_KEY_CACHE]: jwk }).catch(() => {});
-    return true;
+
+    // Backwards-compat: detect and clear the old raw-JWK format that was
+    // stored directly in chrome.storage.local (pre-0.2.0). An attacker who
+    // copied the profile directory could extract the key from these files.
+    const legacy = (await chrome.storage.local.get(LOCAL_KEY_CACHE))[LOCAL_KEY_CACHE];
+    if (legacy && typeof legacy === "object" && "kty" in (legacy as Record<string, unknown>)) {
+      await chrome.storage.local.remove(LOCAL_KEY_CACHE);
+      log("info", "Cleared legacy unwrapped key cache; user will be prompted to unlock.");
+      return false;
+    }
+
+    // Try the wrapped persistent cache (covers browser restart when
+    // "remember" is on). The wrapped blob is useless without the
+    // non-extractable wrapping key in IndexedDB.
+    const restored = await restoreKeyPersistent();
+    if (restored) {
+      unlockedKey = restored;
+      // Re-populate session cache so subsequent SW wakes are fast.
+      const restoredJwk = await exportKeyToJwk(restored);
+      await chrome.storage.session.set({ [SESSION_KEY_CACHE]: restoredJwk }).catch(() => {});
+      return true;
+    }
+
+    return false;
   } catch {
     return false;
   }
@@ -163,6 +182,18 @@ export async function restoreFromSession(): Promise<boolean> {
 export async function destroy(): Promise<void> {
   await chrome.storage.local.remove([META_KEY, ENTRIES_KEY, LOCAL_KEY_CACHE]);
   await chrome.storage.session.remove(SESSION_KEY_CACHE).catch(() => {});
+  // Also wipe the IndexedDB wrapping key so a future vault gets a fresh one.
+  try {
+    const db = await openIdb();
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(IDB_STORE, "readwrite");
+      tx.objectStore(IDB_STORE).delete(WRAP_KEY_ID);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch {
+    // Best-effort — IndexedDB may not be available in all contexts.
+  }
   unlockedKey = null;
 }
 
@@ -269,13 +300,115 @@ async function cacheKeyToSession(key: VaultKey): Promise<void> {
     const jwk = await exportKeyToJwk(key);
     // Always cache in session (survives SW suspension within same browser session).
     await chrome.storage.session.set({ [SESSION_KEY_CACHE]: jwk });
-    // If "remember" is enabled, ALSO cache in local (survives browser restart).
+    // If "remember" is enabled, ALSO cache persistently via the IndexedDB
+    // wrapping key. The wrapped blob in chrome.storage.local is useless
+    // without the non-extractable CryptoKey held in IndexedDB — which the
+    // browser refuses to export, so a copied profile directory can't use it.
     const remember = await getRememberVault();
     if (remember) {
-      await chrome.storage.local.set({ [LOCAL_KEY_CACHE]: jwk });
+      await cacheKeyPersistent(key);
     }
   } catch {
     // Non-fatal: if caching fails, we still have the in-memory key.
+  }
+}
+
+// ---------------------------------------------------------------------------
+// IndexedDB key storage — holds a non-extractable AES-GCM wrapping key.
+// Browsers persist non-extractable CryptoKey objects across sessions via
+// structured clone. This is the entire reason IndexedDB is used over
+// chrome.storage.local for this one value: the browser's internal key store
+// is opaque to filesystem inspection.
+// ---------------------------------------------------------------------------
+
+const IDB_NAME = "ksef-invosync-vault";
+const IDB_STORE = "wrapKey";
+const WRAP_KEY_ID = "v1";
+
+async function openIdb(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(IDB_NAME, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(IDB_STORE);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function getOrCreateWrappingKey(): Promise<CryptoKey> {
+  const db = await openIdb();
+
+  const existing = await new Promise<CryptoKey | undefined>((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, "readonly");
+    const req = tx.objectStore(IDB_STORE).get(WRAP_KEY_ID);
+    req.onsuccess = () => resolve(req.result as CryptoKey | undefined);
+    req.onerror = () => reject(req.error);
+  });
+  if (existing) return existing;
+
+  // Generate a non-extractable key. This is the entire security property:
+  // the browser will never allow this key to leave the process, so a copied
+  // profile directory yields ciphertext with no way to unwrap.
+  const key = await crypto.subtle.generateKey(
+    { name: "AES-GCM", length: 256 },
+    false, // NOT extractable — this is the whole point
+    ["wrapKey", "unwrapKey"],
+  );
+
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, "readwrite");
+    tx.objectStore(IDB_STORE).put(key, WRAP_KEY_ID);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+
+  return key;
+}
+
+// ---------------------------------------------------------------------------
+// Persistent cache: { wrapped, iv } in chrome.storage.local, unwrappable
+// only with the non-extractable key in IndexedDB.
+// ---------------------------------------------------------------------------
+
+type WrappedKeyBlob = { wrapped: string; iv: string };
+
+async function cacheKeyPersistent(vaultKey: VaultKey): Promise<void> {
+  const wrapKey = await getOrCreateWrappingKey();
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const wrappedBuf = await crypto.subtle.wrapKey(
+    "raw",
+    vaultKey,
+    wrapKey,
+    { name: "AES-GCM", iv },
+  );
+  const blob: WrappedKeyBlob = {
+    wrapped: base64urlEncode(new Uint8Array(wrappedBuf)),
+    iv: base64urlEncode(iv),
+  };
+  await chrome.storage.local.set({ [LOCAL_KEY_CACHE]: blob });
+}
+
+async function restoreKeyPersistent(): Promise<VaultKey | null> {
+  const result = await chrome.storage.local.get(LOCAL_KEY_CACHE);
+  const stored = result[LOCAL_KEY_CACHE] as WrappedKeyBlob | undefined;
+  if (!stored || !stored.wrapped || !stored.iv) return null;
+
+  try {
+    const wrapKey = await getOrCreateWrappingKey();
+    return await crypto.subtle.unwrapKey(
+      "raw",
+      base64urlDecode(stored.wrapped),
+      wrapKey,
+      { name: "AES-GCM", iv: base64urlDecode(stored.iv) },
+      { name: "AES-GCM", length: 256 },
+      true, // the unwrapped vault key IS extractable (we need to export it to JWK for session cache)
+      ["encrypt", "decrypt"],
+    ) as VaultKey;
+  } catch {
+    // Wrapping key was regenerated (IndexedDB cleared by user / browser update)
+    // — stored blob is dead. Clean up.
+    await chrome.storage.local.remove(LOCAL_KEY_CACHE);
+    log("info", "Wrapped key cache invalid (IndexedDB wrapping key changed); cleared.");
+    return null;
   }
 }
 

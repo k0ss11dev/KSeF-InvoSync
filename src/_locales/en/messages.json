@@ -81,8 +81,8 @@
   "options_clear_tracking": { "message": "Clear sheet tracking" },
   "options_tracking_cleared": { "message": "Tracking cleared \u2014 next sync re-writes all rows" },
 
-  "vault_remember": { "message": "Remember passphrase across browser restarts" },
-  "vault_remember_warning": { "message": "The vault key is stored on disk. Anyone with access to your Chrome profile can decrypt the KSeF token. OK for test env, use with caution on prod." },
+  "vault_remember": { "message": "Keep unlocked across browser restarts" },
+  "vault_remember_warning": { "message": "The vault key is wrapped with a non-extractable browser key and stored locally. A copied Chrome profile cannot decrypt it — but an attacker running code inside your browser can. Keep this off on shared devices." },
 
   "vault_not_initialized": { "message": "Not initialized. Use the popup to set up." },
   "vault_locked": { "message": "Locked. Open the popup to unlock." },

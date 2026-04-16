@@ -139,7 +139,11 @@ void vaultMod.restoreFromSession().then(async (restored) => {
   log("warn", "vault restoreFromSession failed:", err);
 });
 
-chrome.runtime.onMessage.addListener((msg: Message, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((msg: Message, sender, sendResponse) => {
+  // Defense-in-depth: only accept messages from our own extension. Today
+  // nothing external can reach this listener (no externally_connectable, no
+  // content scripts), but a future change could relax those constraints.
+  if (sender.id !== chrome.runtime.id) return false;
   handle(msg)
     .then(sendResponse)
     .catch((err: unknown) => {

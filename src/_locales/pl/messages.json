@@ -81,8 +81,8 @@
   "options_clear_tracking": { "message": "Wyczy\u015b\u0107 \u015bledzenie arkusza" },
   "options_tracking_cleared": { "message": "\u015aledzenie wyczyszczone \u2014 nast\u0119pna synchronizacja zapisze wszystkie wiersze" },
 
-  "vault_remember": { "message": "Zapami\u0119taj has\u0142o po restarcie przegl\u0105darki" },
-  "vault_remember_warning": { "message": "Klucz sejfu jest zapisywany na dysku. Ka\u017cda osoba z dost\u0119pem do profilu Chrome mo\u017ce odszyfrowa\u0107 token KSeF. OK dla \u015brod. testowego, na prod. ostro\u017cnie." },
+  "vault_remember": { "message": "Utrzymuj odblokowanie po restarcie przegl\u0105darki" },
+  "vault_remember_warning": { "message": "Klucz sejfu jest zabezpieczony nieeksportowalnym kluczem przegl\u0105darki. Skopiowany profil Chrome nie pozwoli go odszyfrowa\u0107 \u2014 ale atakuj\u0105cy z dost\u0119pem do uruchomionej przegl\u0105darki mo\u017ce. Wy\u0142\u0105cz na wsp\u00f3\u0142dzielonych urz\u0105dzeniach." },
 
   "vault_not_initialized": { "message": "Nie zainicjalizowano. U\u017cyj popupu do konfiguracji." },
   "vault_locked": { "message": "Zablokowany. Otw\u00f3rz popup, aby odblokowa\u0107." },
