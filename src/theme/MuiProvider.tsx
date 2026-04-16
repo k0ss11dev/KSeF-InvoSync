@@ -84,14 +84,12 @@ export function MuiProvider({ children }: { children: ReactNode }) {
           styleOverrides: {
             root: {
               borderRadius: 6,
-              backgroundColor: isDark ? alpha("#ffffff", 0.04) : alpha("#0f172a", 0.04),
-              transition: "background-color 120ms, transform 120ms",
+              backgroundColor: "transparent",
               "&:hover": {
-                backgroundColor: isDark ? alpha("#ffffff", 0.1) : alpha(primary, 0.1),
-                transform: "translateY(-1px)",
+                backgroundColor: isDark ? alpha("#ffffff", 0.08) : alpha("#0f172a", 0.06),
               },
             },
-            sizeSmall: { width: 30, height: 30 },
+            sizeSmall: { width: 28, height: 28 },
           },
         },
         MuiToggleButton: {

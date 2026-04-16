@@ -343,6 +343,7 @@ function SyncSection() {
                       void send({ type: "autoSync.setInterval", minutes: mins });
                     }}
                   >
+                    {config.periodMinutes === 1 && <MuiMenuItem value="1">1 min (test)</MuiMenuItem>}
                     <MuiMenuItem value="30">30 min</MuiMenuItem>
                     <MuiMenuItem value="60">1h</MuiMenuItem>
                     <MuiMenuItem value="120">2h</MuiMenuItem>

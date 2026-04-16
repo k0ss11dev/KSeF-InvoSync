@@ -51,22 +51,28 @@ import MuiTableBody from "@mui/material/TableBody";
 import MuiTableRow from "@mui/material/TableRow";
 import MuiTableCell from "@mui/material/TableCell";
 import MuiPaper from "@mui/material/Paper";
-
-type Tab = "status" | "config";
-const TAB_KEY = "popup.activeTab";
+// MUI Icons — solid variants for consistent look
+import DownloadIcon from "@mui/icons-material/SaveAlt";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import CloseIcon from "@mui/icons-material/Close";
+import EventIcon from "@mui/icons-material/Event";
+import SettingsIcon from "@mui/icons-material/Settings";
+import LightModeIcon from "@mui/icons-material/LightMode";
+import DarkModeIcon from "@mui/icons-material/DarkMode";
+import DoneAllIcon from "@mui/icons-material/DoneAll";
+import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlineOutlined";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 
 export function App() {
-  const [tab, setTab] = useState<Tab>("status");
+  const [view, setView] = useState<"main" | "settings">("main");
   const [envLabel, setEnvLabel] = useState("");
   const [envWebApp, setEnvWebApp] = useState("https://ap-test.ksef.mf.gov.pl");
   const [dark, setDark] = useState(false);
 
-  // Restore last tab
   useEffect(() => {
-    void chrome.storage.session.get(TAB_KEY).then((r) => {
-      if (r[TAB_KEY] === "config") setTab("config");
-    });
-    // Restore theme — Pico CSS uses html[data-theme]; shadcn uses .dark class
     void chrome.storage.local.get("config.theme").then((r) => {
       const theme = r["config.theme"] as string | undefined;
       const isDark = theme === "dark" || (!theme && window.matchMedia("(prefers-color-scheme: dark)").matches);
@@ -84,22 +90,19 @@ export function App() {
     });
   }, []);
 
-  const switchTab = (next: Tab) => {
-    setTab(next);
-    void chrome.storage.session.set({ [TAB_KEY]: next });
-  };
-
   return (
-    <div className="app">
+    <MuiBox sx={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden" }}>
+      {/* Header */}
       <MuiStack
         direction="row"
         spacing={1}
         sx={{
           alignItems: "center",
           px: 2,
-          py: 1.25,
+          py: 1,
           borderBottom: 1,
           borderColor: "divider",
+          flexShrink: 0,
         }}
       >
         <MuiTypography variant="subtitle1" sx={{ fontWeight: 700, flex: 1, lineHeight: 1.2 }}>
@@ -118,23 +121,27 @@ export function App() {
           }}
           title={dark ? "Light mode" : "Dark mode"}
         >
-          {dark ? "☀" : "☾"}
+          {dark ? <LightModeIcon sx={{ fontSize: 18 }} /> : <DarkModeIcon sx={{ fontSize: 18 }} />}
+        </MuiIconButton>
+        <MuiIconButton
+          size="small"
+          onClick={() => setView(view === "main" ? "settings" : "main")}
+          title={view === "main" ? t("button_settings") : t("tab_status")}
+        >
+          {view === "main"
+            ? <SettingsIcon sx={{ fontSize: 18 }} />
+            : <CloseIcon sx={{ fontSize: 18 }} />
+          }
         </MuiIconButton>
       </MuiStack>
-      <MuiTabs
-        value={tab}
-        onChange={(_, v) => switchTab(v as Tab)}
-        variant="fullWidth"
-        sx={{ borderBottom: 1, borderColor: "divider", minHeight: 36 }}
-      >
-        <MuiTab label={t("tab_status")} value="status" sx={{ minHeight: 36, py: 0.5 }} />
-        <MuiTab label={t("tab_config")} value="config" sx={{ minHeight: 36, py: 0.5 }} />
-      </MuiTabs>
-      <main>
-        {tab === "status" && <StatusTab ksefWebApp={envWebApp} />}
-        {tab === "config" && <ConfigTab />}
-      </main>
-    </div>
+
+      {view === "main" && <StatusTab ksefWebApp={envWebApp} />}
+      {view === "settings" && (
+        <MuiBox sx={{ flex: 1, overflowY: "auto", p: 1.5 }}>
+          <ConfigTab />
+        </MuiBox>
+      )}
+    </MuiBox>
   );
 }
 
@@ -174,7 +181,6 @@ function StatusTab({ ksefWebApp }: { ksefWebApp: string }) {
     if (sRes.ok && sRes.data) setStats(sRes.data);
     if (iRes.ok) {
       setIncoming(iRes.data);
-      void send({ type: "incoming.markRead" });
     }
     if (uRes.ok && uRes.data) {
       setSheetUrl(uRes.data);
@@ -196,6 +202,14 @@ function StatusTab({ ksefWebApp }: { ksefWebApp: string }) {
     }, 5000);
     void updateSyncCountdown(setNextSyncPct);
 
+    // Mark incoming as read after a short delay — gives the user 3 seconds
+    // to see unread highlights, then persists the read timestamp so the next
+    // popup open won't re-show them. Also clears the extension icon badge.
+    const markReadTimer = setTimeout(() => {
+      chrome.storage.local.set({ "sync.incoming.lastReadAt": new Date().toISOString() });
+      chrome.action.setBadgeText({ text: "" });
+    }, 3000);
+
     const onStorageChanged = (
       changes: { [key: string]: chrome.storage.StorageChange },
       area: string,
@@ -212,6 +226,7 @@ function StatusTab({ ksefWebApp }: { ksefWebApp: string }) {
     chrome.storage.onChanged.addListener(onStorageChanged);
 
     return () => {
+      clearTimeout(markReadTimer);
       clearInterval(interval);
       chrome.storage.onChanged.removeListener(onStorageChanged);
     };
@@ -283,7 +298,7 @@ function StatusTab({ ksefWebApp }: { ksefWebApp: string }) {
   const unreadCount = incoming.filter((i) => i.isNew).length;
 
   return (
-    <div className="status-tab">
+    <MuiBox sx={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
       {/* Status bar */}
       {(syncing || error || syncResult) && (
         <MuiStack sx={{ p: 1.5 }}>
@@ -375,17 +390,17 @@ function StatusTab({ ksefWebApp }: { ksefWebApp: string }) {
               void send({ type: "incoming.markRead" }).then(() => {
                 setIncoming(incoming.map((i) => ({ ...i, isNew: false })));
               });
-            }}>✓</MuiIconButton>
+            }}><DoneAllIcon sx={{ fontSize: 18 }} /></MuiIconButton>
           )}
           {incoming.length > 0 && (
             <MuiIconButton size="small" title={t("feed_clear_all")} onClick={() => {
               void send({ type: "incoming.clearAll" }).then(() => setIncoming([]));
-            }}>✕</MuiIconButton>
+            }}><DeleteSweepIcon sx={{ fontSize: 18 }} /></MuiIconButton>
           )}
         </MuiStack>
       </MuiStack>
 
-      <MuiList disablePadding sx={{ borderTop: 1, borderColor: "divider" }}>
+      <MuiList disablePadding sx={{ borderTop: 1, borderColor: "divider", flex: 1, overflowY: "auto", minHeight: 0 }}>
         {incoming.length === 0 && (
           <MuiTypography variant="body2" color="text.secondary" sx={{ p: 2, textAlign: "center" }}>
             {t("feed_empty")}
@@ -406,8 +421,6 @@ function StatusTab({ ksefWebApp }: { ksefWebApp: string }) {
               borderColor: "divider",
               bgcolor: inv.isNew ? "action.hover" : "transparent",
               "&:hover": { bgcolor: "action.hover" },
-              "&:hover .feed-actions": { opacity: 1 },
-              position: "relative",
             }}
           >
             {inv.isNew && (
@@ -415,6 +428,7 @@ function StatusTab({ ksefWebApp }: { ksefWebApp: string }) {
             )}
             <MuiListItemButton
               onClick={() => setViewingInvoice(inv.ksefNumber)}
+              disableRipple
               sx={{ py: 1, px: 2, display: "block" }}
             >
               <MuiStack direction="row" sx={{ justifyContent: "space-between", alignItems: "baseline", mb: 0.25 }}>
@@ -425,63 +439,43 @@ function StatusTab({ ksefWebApp }: { ksefWebApp: string }) {
                   {inv.grossAmount.toLocaleString()} {inv.currency}
                 </MuiTypography>
               </MuiStack>
-              <MuiStack direction="row" sx={{ justifyContent: "space-between", alignItems: "baseline" }}>
+              <MuiStack direction="row" sx={{ justifyContent: "space-between", alignItems: "center" }}>
                 <MuiTypography variant="caption" color="text.secondary" sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", pr: 1 }}>
-                  {inv.invoiceNumber}
+                  {inv.invoiceNumber} · {inv.issueDate}
                 </MuiTypography>
-                <MuiTypography variant="caption" color="text.secondary" sx={{ whiteSpace: "nowrap" }}>
-                  {inv.issueDate}
-                </MuiTypography>
+                <MuiStack direction="row" spacing={0} onClick={(e) => e.stopPropagation()}>
+                  {calendarEvents[inv.ksefNumber] && (
+                    <MuiIconButton
+                      size="small"
+                      component="a"
+                      href={calendarEvents[inv.ksefNumber].htmlLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={t("feed_open_calendar_event")}
+                    ><EventIcon sx={{ fontSize: 16 }} /></MuiIconButton>
+                  )}
+                  <MuiIconButton size="small" title={t("invoice_download_xml")} onClick={() => {
+                    void downloadInvoiceXml(inv.ksefNumber, inv.invoiceNumber);
+                  }}><DownloadIcon sx={{ fontSize: 16 }} /></MuiIconButton>
+                  <MuiIconButton size="small" title={t("feed_copy")} onClick={() => {
+                    void navigator.clipboard.writeText(
+                      `${inv.invoiceNumber} | ${inv.sellerName} | ${inv.grossAmount} ${inv.currency} | ${inv.ksefNumber}`
+                    );
+                  }}><ContentCopyIcon sx={{ fontSize: 16 }} /></MuiIconButton>
+                  <MuiIconButton size="small" title={t("feed_remove")} onClick={() => {
+                    void send({ type: "incoming.remove", ksefNumber: inv.ksefNumber }).then(() => {
+                      setIncoming(incoming.filter((i) => i.ksefNumber !== inv.ksefNumber));
+                    });
+                  }}><CloseIcon sx={{ fontSize: 16 }} /></MuiIconButton>
+                </MuiStack>
               </MuiStack>
             </MuiListItemButton>
-            <MuiStack
-              className="feed-actions"
-              direction="row"
-              spacing={0}
-              sx={{
-                position: "absolute",
-                right: 6,
-                bottom: 2,
-                opacity: 0.55,
-                transition: "opacity 120ms",
-                bgcolor: "background.paper",
-                borderRadius: 1,
-              }}
-            >
-              {calendarEvents[inv.ksefNumber] && (
-                <MuiIconButton
-                  size="small"
-                  component="a"
-                  href={calendarEvents[inv.ksefNumber].htmlLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title={t("feed_open_calendar_event")}
-                  sx={{ fontSize: 14 }}
-                >📅</MuiIconButton>
-              )}
-              <MuiIconButton size="small" title={t("invoice_download_xml")} sx={{ fontSize: 14 }} onClick={(e) => {
-                e.stopPropagation();
-                void downloadInvoiceXml(inv.ksefNumber, inv.invoiceNumber);
-              }}>⤓</MuiIconButton>
-              <MuiIconButton size="small" title={t("feed_copy")} sx={{ fontSize: 14 }} onClick={(e) => {
-                e.stopPropagation();
-                void navigator.clipboard.writeText(
-                  `${inv.invoiceNumber} | ${inv.sellerName} | ${inv.grossAmount} ${inv.currency} | ${inv.ksefNumber}`
-                );
-              }}>⎘</MuiIconButton>
-              <MuiIconButton size="small" title={t("feed_remove")} sx={{ fontSize: 14 }} onClick={(e) => {
-                e.stopPropagation();
-                void send({ type: "incoming.remove", ksefNumber: inv.ksefNumber }).then(() => {
-                  setIncoming(incoming.filter((i) => i.ksefNumber !== inv.ksefNumber));
-                });
-              }}>✕</MuiIconButton>
-            </MuiStack>
           </MuiBox>
         ))}
       </MuiList>
 
-      {/* Action row: interval select + open sheet + sync */}
-      <MuiStack direction="row" spacing={1} sx={{ alignItems: "center", p: 1.5, borderTop: 1, borderColor: "divider" }}>
+      {/* Action row: pinned at bottom, always visible */}
+      <MuiStack direction="row" spacing={1} sx={{ alignItems: "center", p: 1.5, borderTop: 1, borderColor: "divider", flexShrink: 0 }}>
         <SyncIntervalSelect />
         {sheetsEnabled && sheetUrl && (
           <MuiIconButton
@@ -518,7 +512,7 @@ function StatusTab({ ksefWebApp }: { ksefWebApp: string }) {
           onClose={() => setViewingInvoice(null)}
         />
       )}
-    </div>
+    </MuiBox>
   );
 }
 
@@ -726,7 +720,17 @@ function AdvancedSettingsLink() {
           <MuiButton
             size="small"
             variant="outlined"
-            onClick={() => chrome.runtime.openOptionsPage()}
+            onClick={() => {
+              const optUrl = chrome.runtime.getURL("options/index.html");
+              chrome.tabs.query({ url: optUrl }, (tabs) => {
+                if (tabs.length > 0 && tabs[0].id != null) {
+                  chrome.tabs.update(tabs[0].id, { active: true });
+                  if (tabs[0].windowId != null) chrome.windows.update(tabs[0].windowId, { focused: true });
+                } else {
+                  chrome.tabs.create({ url: optUrl });
+                }
+              });
+            }}
           >
             {t("button_settings")}
           </MuiButton>
@@ -1074,7 +1078,7 @@ function LogsConfig() {
               title={open ? t("options_logs_hide") : t("options_logs_show")}
               aria-label={open ? t("options_logs_hide") : t("options_logs_show")}
             >
-              {open ? "▲" : "▼"}
+              {open ? <ExpandLessIcon sx={{ fontSize: 18 }} /> : <ExpandMoreIcon sx={{ fontSize: 18 }} />}
             </MuiIconButton>
             {open && logs && (
               <>
@@ -1083,20 +1087,20 @@ function LogsConfig() {
                   onClick={() => void load()}
                   title={t("options_logs_refresh")}
                   aria-label={t("options_logs_refresh")}
-                >↻</MuiIconButton>
+                ><RefreshIcon sx={{ fontSize: 18 }} /></MuiIconButton>
                 <MuiIconButton
                   size="small"
                   onClick={() => void copy()}
                   disabled={!logs.length}
                   title={copied ? t("options_logs_copied") : t("options_logs_copy")}
                   aria-label={t("options_logs_copy")}
-                >{copied ? "✓" : "⎘"}</MuiIconButton>
+                >{copied ? <DoneAllIcon sx={{ fontSize: 18 }} /> : <ContentCopyIcon sx={{ fontSize: 18 }} />}</MuiIconButton>
                 <MuiIconButton
                   size="small"
                   onClick={() => void clear()}
                   title={t("options_logs_clear")}
                   aria-label={t("options_logs_clear")}
-                >🗑</MuiIconButton>
+                ><DeleteOutlineIcon sx={{ fontSize: 18 }} /></MuiIconButton>
               </>
             )}
           </MuiStack>

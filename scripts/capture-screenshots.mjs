@@ -79,28 +79,43 @@ const extensionId = sw.url().split("/")[2];
 console.log(`  extension id: ${extensionId}`);
 
 // ---------------------------------------------------------------------------
-// Pre-seed chrome.storage.local with mock state so the popup looks "lived in"
-// without running real OAuth / KSeF auth.
+// Phase 1: set up vault via the popup UI (SW can't message itself, so we
+// drive the actual form). Then seed mock data into storage.
+// ---------------------------------------------------------------------------
 
-// Create + unlock a real vault via the SW message handler so isInitialized()
-// returns true and the popup proceeds past the "go to Config" gate.
-await sw.evaluate(async () => {
-  const send = (msg) =>
-    new Promise((resolve) =>
-      chrome.runtime.sendMessage(msg, (res) => resolve(res)),
-    );
-  // Reset first in case a prior run left storage around.
-  await chrome.storage.local.clear();
-  await chrome.storage.session.clear();
-  // Create vault — this leaves it unlocked (in-memory key set on the SW).
-  await send({
-    type: "vault.create",
-    passphrase: "demo-screenshot-passphrase",
-    ksefToken: "20260101-EC-XXXXXXXXXX-XXXXXXXXXX-XX|nip-8698281999|deadbeefcafebabe0011223344556677889900aabbccddeeff0011223344556",
-    contextNip: "8698281999",
-  });
-});
+const FAKE_TOKEN = "20260101-EC-XXXXXXXXXX-XXXXXXXXXX-XX|nip-8698281999|deadbeefcafebabe0011223344556677889900aabbccddeeff0011223344556677";
 
+console.log("  setting up vault via popup UI...");
+const setupPage = await context.newPage();
+await setupPage.setViewportSize(POPUP_VIEWPORT);
+await setupPage.goto(`chrome-extension://${extensionId}/popup/index.html`);
+await setupPage.waitForTimeout(1000);
+
+// Click gear to open settings view
+const gearBtn = setupPage.getByRole("button", { name: /settings|ustawienia/i });
+await gearBtn.waitFor({ state: "visible", timeout: 10000 });
+await gearBtn.click();
+await setupPage.waitForTimeout(1000);
+
+// Fill vault form
+const passInput = setupPage.locator('input[placeholder*="characters"], input[placeholder*="znaków"]').first();
+await passInput.waitFor({ state: "visible", timeout: 10000 });
+await passInput.fill("demo-screenshot-pass");
+
+const tokenInput = setupPage.locator('input[placeholder*="Tokens"], input[placeholder*="aplikacji"], input[placeholder*="from KSeF"]').first();
+await tokenInput.fill(FAKE_TOKEN);
+
+await setupPage.waitForTimeout(500);
+const nipInput = setupPage.locator('input[placeholder*="NIP"], input[placeholder*="tax ID"], input[placeholder*="podatkowy"]').first();
+const nipVal = await nipInput.inputValue().catch(() => "");
+if (!nipVal) await nipInput.fill("8698281999");
+
+await setupPage.getByRole("button", { name: /set up vault|skonfiguruj sejf/i }).click();
+await setupPage.waitForTimeout(3000);
+console.log("  ✓ vault created");
+await setupPage.close();
+
+// Seed mock data (vault is now unlocked in SW memory)
 await sw.evaluate(async () => {
   const now = new Date().toISOString();
   const sampleSeller = ["Test Buyer A Sp. z o.o.", "ACME Polska sp. z o.o.", "Faktoria Tech S.A."];
@@ -168,25 +183,63 @@ for (const theme of ["light", "dark"]) {
   await popup.close();
 }
 
-// 2. Config tab — light + dark
+// 2. Settings view — light + dark (click gear icon to toggle)
 for (const theme of ["light", "dark"]) {
   const popup = await openPopup(theme);
-  // Click the Config tab
-  await popup.getByRole("tab", { name: /config|konfiguracja/i }).click();
-  await popup.waitForTimeout(400);
+  // Click the settings gear icon in the header
+  const settingsBtn = popup.getByRole("button", { name: /settings|ustawienia/i });
+  await settingsBtn.waitFor({ state: "visible", timeout: 5000 });
+  await settingsBtn.click();
+  await popup.waitForTimeout(600);
   await shoot(popup, `popup-config-${theme}.png`);
   await popup.close();
 }
 
-// 3. Invoice viewer modal (light)
+// 3. Invoice viewer modal (light) — mock the KSeF XML fetch so the modal
+//    renders a real-looking invoice instead of an auth error.
 {
+  const MOCK_FA3_XML = `<?xml version="1.0" encoding="UTF-8"?>
+<Faktura xmlns="http://crd.gov.pl/wzor/2025/06/25/13775/">
+  <Naglowek><KodFormularza kodSystemowy="FA (3)" wersjaSchemy="1-0E">FA</KodFormularza></Naglowek>
+  <Podmiot1><DaneIdentyfikacyjne><NIP>5861719741</NIP><Nazwa>Test Seller Sp. z o.o.</Nazwa></DaneIdentyfikacyjne><Adres><KodKraju>PL</KodKraju><AdresL1>ul. Marszałkowska 12, 00-001 Warszawa</AdresL1></Adres></Podmiot1>
+  <Podmiot2><DaneIdentyfikacyjne><NIP>8698281999</NIP><Nazwa>Test Buyer A Sp. z o.o.</Nazwa></DaneIdentyfikacyjne><Adres><KodKraju>PL</KodKraju><AdresL1>ul. Krakowskie Przedmieście 5, 00-068 Warszawa</AdresL1></Adres></Podmiot2>
+  <Fa>
+    <KodWaluty>PLN</KodWaluty>
+    <P_1>2026-04-14</P_1>
+    <P_1M>Warszawa</P_1M>
+    <P_2>FA/DEMO/2026/1000</P_2>
+    <P_6>2026-04-14</P_6>
+    <P_13_1>4500.00</P_13_1>
+    <P_14_1>1035.00</P_14_1>
+    <P_15>5535.00</P_15>
+    <Adnotacje><P_16>2</P_16><P_17>2</P_17><P_18>2</P_18><P_18A>2</P_18A><Zwolnienie><P_19N>1</P_19N></Zwolnienie></Adnotacje>
+    <FaWiersz><NrWierszaFa>1</NrWierszaFa><P_7>Konsultacja wdrożeniowa KSeF</P_7><P_8A>godz.</P_8A><P_8B>5</P_8B><P_9A>500.00</P_9A><P_11>2500.00</P_11><P_12>23</P_12></FaWiersz>
+    <FaWiersz><NrWierszaFa>2</NrWierszaFa><P_7>Szkolenie z e-fakturowania (1 dzień)</P_7><P_8A>szt.</P_8A><P_8B>2</P_8B><P_9A>1000.00</P_9A><P_11>2000.00</P_11><P_12>23</P_12></FaWiersz>
+    <Platnosc><TerminPlatnosci><Termin>2026-04-28</Termin></TerminPlatnosci><FormaPlatnosci>6</FormaPlatnosci></Platnosc>
+  </Fa>
+</Faktura>`;
+
   const popup = await openPopup("light");
-  // Wait for the feed to render (refresh() is async on mount)
+
+  // Monkey-patch chrome.runtime.sendMessage in the POPUP to intercept the
+  // invoice.fetchXml message and return mock XML — avoids the real KSeF
+  // auth flow which fails with a fake token.
+  await popup.evaluate((mockXml) => {
+    const orig = chrome.runtime.sendMessage.bind(chrome.runtime);
+    chrome.runtime.sendMessage = (msg, callback) => {
+      if (msg && msg.type === "invoice.fetchXml") {
+        if (callback) callback({ ok: true, data: mockXml });
+        return;
+      }
+      return orig(msg, callback);
+    };
+  }, MOCK_FA3_XML);
+
   const firstItem = popup.locator(".MuiListItemButton-root").first();
   try {
     await firstItem.waitFor({ state: "visible", timeout: 5000 });
     await firstItem.click();
-    await popup.waitForTimeout(1200);
+    await popup.waitForTimeout(1500);
     await shoot(popup, "popup-invoice-modal.png");
   } catch {
     console.log("  ⚠ no feed item to open for invoice modal — skipped");

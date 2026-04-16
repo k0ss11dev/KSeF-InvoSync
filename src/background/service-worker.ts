@@ -126,14 +126,26 @@ void ensureAlarmMatchesConfig().catch((err) => {
 void vaultMod.restoreFromSession().then(async (restored) => {
   if (restored) {
     log("info", "Vault key restored from session cache");
-    // Set green badge — vault unlocked, auto-sync can run
-    // Green dot on icon — auto-sync ready
     void autoSyncMod.updateBadge("ok");
   } else {
     const autoEnabled = await persistentConfigMod.getAutoSyncEnabled().catch(() => false);
     if (autoEnabled) {
       void autoSyncMod.updateBadge("locked");
     }
+  }
+
+  // Restore unread badge count on SW wake / extension reload. The icon badge
+  // lives in memory and is cleared whenever the SW restarts. Re-compute from
+  // the persisted feed + lastReadAt so the count survives reloads.
+  try {
+    const feed = await persistentConfigMod.getIncomingFeed();
+    const lastRead = await persistentConfigMod.getIncomingLastReadAt();
+    const unreadCount = feed.filter((i) => !lastRead || i.syncedAt > lastRead).length;
+    if (unreadCount > 0) {
+      void autoSyncMod.setUnreadBadge(unreadCount);
+    }
+  } catch {
+    // Non-fatal — badge just stays empty until next sync
   }
 }).catch((err) => {
   log("warn", "vault restoreFromSession failed:", err);

@@ -113,7 +113,10 @@ await setupPage.setViewportSize(POPUP_VIEWPORT);
 await setupPage.goto(`chrome-extension://${extensionId}/popup/index.html`);
 await setupPage.waitForTimeout(800);
 
-await setupPage.getByRole("tab", { name: /config|konfiguracja/i }).click();
+// Click gear icon to open settings view
+const gearBtn = setupPage.getByRole("button", { name: /settings|ustawienia/i });
+await gearBtn.waitFor({ state: "visible", timeout: 10000 });
+await gearBtn.click();
 await setupPage.waitForTimeout(1500);
 
 const passphraseInput = setupPage.locator('input[placeholder*="characters"], input[placeholder*="znaków"]').first();
@@ -136,14 +139,23 @@ await sw.evaluate(async () => {
   await chrome.storage.local.set({
     "config.autoSync": { enabled: true, periodMinutes: 1 },
     "config.calendarEnabled": true,
-    "config.sheetsEnabled": false,
+    "config.sheetsEnabled": true,
   });
   const all = await chrome.alarms.getAll();
   for (const a of all) await chrome.alarms.clear(a.name);
   await chrome.alarms.create("invo-sync.autoSync", { periodInMinutes: 1 });
 });
 
-await setupPage.getByRole("tab", { name: /status/i }).click();
+// Click close icon to go back to main view
+const closeBtn = setupPage.getByRole("button", { name: /status/i });
+try {
+  await closeBtn.waitFor({ state: "visible", timeout: 3000 });
+  await closeBtn.click();
+} catch {
+  // Might already be on main view — try clicking gear to toggle back
+  const gear2 = setupPage.getByRole("button", { name: /settings|ustawienia/i });
+  if (await gear2.count()) await gear2.click();
+}
 await setupPage.waitForTimeout(1500);
 await setupPage.getByRole("button", { name: /sync now|synchronizuj teraz/i }).click();
 await setupPage.waitForTimeout(12_000);
