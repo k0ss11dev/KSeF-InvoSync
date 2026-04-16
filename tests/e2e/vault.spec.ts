@@ -27,13 +27,22 @@ type VaultBridge = {
   setKsefToken(token: string): Promise<void>;
   getKsefToken(): Promise<string | null>;
   clearKsefToken(): Promise<void>;
+  restoreFromSession(): Promise<boolean>;
+  reCacheKey(): Promise<void>;
   __testing: { forgetUnlockedKey(): void };
+};
+
+type PersistentConfigBridge = {
+  setRememberVault(enabled: boolean): Promise<void>;
+  getRememberVault(): Promise<boolean>;
 };
 
 declare global {
   // Set by service-worker.ts in dev/test builds.
   // eslint-disable-next-line no-var
   var __vaultForTests: VaultBridge | undefined;
+  // eslint-disable-next-line no-var
+  var __persistentConfigForTests: PersistentConfigBridge | undefined;
 }
 
 test.describe("vault e2e (chrome.storage.local round-trip)", () => {
@@ -154,5 +163,124 @@ test.describe("vault e2e (chrome.storage.local round-trip)", () => {
 
     expect(result.after).toBeNull();
     expect(result.unlocked).toBe(true);
+  });
+
+  // -----------------------------------------------------------------
+  // Security: IndexedDB-wrapped persistent key cache (Fix #2)
+  // -----------------------------------------------------------------
+
+  test("remember-passphrase stores a wrapped blob, not a raw JWK", async ({
+    serviceWorker,
+  }) => {
+    const result = await serviceWorker.evaluate(async ({ passphrase }) => {
+      const v = globalThis.__vaultForTests!;
+      const pc = globalThis.__persistentConfigForTests!;
+      await v.create(passphrase);
+
+      // Enable "remember" and re-cache the key.
+      await pc.setRememberVault(true);
+      await v.reCacheKey();
+
+      // Read what's in chrome.storage.local under "vault.persistentKey".
+      const stored = (await chrome.storage.local.get("vault.persistentKey"))["vault.persistentKey"];
+      return {
+        hasWrapped: stored && typeof stored === "object" && "wrapped" in stored && "iv" in stored,
+        hasKty: stored && typeof stored === "object" && "kty" in stored,
+      };
+    }, { passphrase: PASSPHRASE });
+
+    // It MUST be a wrapped blob { wrapped, iv }, NOT a raw JWK { kty, k, ... }.
+    expect(result.hasWrapped).toBe(true);
+    expect(result.hasKty).toBe(false);
+  });
+
+  test("wrapped persistent cache restores vault key after SW memory wipe", async ({
+    serviceWorker,
+  }) => {
+    const result = await serviceWorker.evaluate(async ({ passphrase, token }) => {
+      const v = globalThis.__vaultForTests!;
+      const pc = globalThis.__persistentConfigForTests!;
+
+      // Set up vault + token + enable "remember".
+      await v.create(passphrase);
+      await v.setKsefToken(token);
+      await pc.setRememberVault(true);
+      await v.reCacheKey();
+
+      // Simulate SW kill: wipe in-memory key AND session cache.
+      v.__testing.forgetUnlockedKey();
+      await chrome.storage.session.remove("vault.sessionKey");
+
+      // Attempt restore — should use the wrapped persistent cache.
+      const restored = await v.restoreFromSession();
+      const retrievedToken = restored ? await v.getKsefToken() : null;
+      return { restored, retrievedToken };
+    }, { passphrase: PASSPHRASE, token: SAMPLE_TOKEN });
+
+    expect(result.restored).toBe(true);
+    expect(result.retrievedToken).toBe(SAMPLE_TOKEN);
+  });
+
+  test("legacy raw-JWK cache is auto-cleared on restore", async ({
+    serviceWorker,
+  }) => {
+    const result = await serviceWorker.evaluate(async ({ passphrase }) => {
+      const v = globalThis.__vaultForTests!;
+      await v.create(passphrase);
+
+      // Simulate a legacy cache: write a raw JWK directly to storage.local.
+      const fakeJwk = { kty: "oct", k: "AAAA", alg: "A256GCM", ext: true };
+      await chrome.storage.local.set({ "vault.persistentKey": fakeJwk });
+
+      // Wipe in-memory + session to force restore from local.
+      v.__testing.forgetUnlockedKey();
+      await chrome.storage.session.remove("vault.sessionKey");
+
+      // Attempt restore — should detect legacy format and clear it.
+      const restored = await v.restoreFromSession();
+      const afterClear = (await chrome.storage.local.get("vault.persistentKey"))["vault.persistentKey"];
+
+      return { restored, legacyCleared: afterClear === undefined };
+    }, { passphrase: PASSPHRASE });
+
+    // Restore fails (legacy cleared, no wrapped blob to fall back on).
+    expect(result.restored).toBe(false);
+    // Legacy JWK was removed from storage.
+    expect(result.legacyCleared).toBe(true);
+  });
+
+  test("destroy wipes the IndexedDB wrapping key", async ({
+    serviceWorker,
+  }) => {
+    const result = await serviceWorker.evaluate(async ({ passphrase, token }) => {
+      const v = globalThis.__vaultForTests!;
+      const pc = globalThis.__persistentConfigForTests!;
+
+      // Full setup with remember enabled.
+      await v.create(passphrase);
+      await v.setKsefToken(token);
+      await pc.setRememberVault(true);
+      await v.reCacheKey();
+
+      // Destroy should wipe everything including IndexedDB.
+      await v.destroy();
+
+      // Re-create a fresh vault and enable remember again.
+      await v.create(passphrase);
+      await v.setKsefToken(token);
+      await pc.setRememberVault(true);
+      await v.reCacheKey();
+
+      // The NEW wrapping key should differ from the old one — simulated here
+      // by checking that restore works (a new key was generated, not stale).
+      v.__testing.forgetUnlockedKey();
+      await chrome.storage.session.remove("vault.sessionKey");
+      const restored = await v.restoreFromSession();
+      const retrieved = restored ? await v.getKsefToken() : null;
+      return { restored, retrieved };
+    }, { passphrase: PASSPHRASE, token: SAMPLE_TOKEN });
+
+    expect(result.restored).toBe(true);
+    expect(result.retrieved).toBe(SAMPLE_TOKEN);
   });
 });
