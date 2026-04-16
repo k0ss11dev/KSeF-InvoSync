@@ -11,7 +11,7 @@ Free, open-source browser extension (MV3). No backend, no paid accounts, no infr
 ## Demo
 
 <p align="center">
-  <img src="docs/videos/live-demo.gif" alt="Live demo: three fresh incoming invoices arriving in the popup feed with unread highlight" width="320" />
+  <img src="docs/videos/live-demo.gif?v=2" alt="Live demo: three fresh incoming invoices arriving in the popup feed with unread highlight" width="320" />
 </p>
 
 Vault setup, baseline sync, then three fresh incoming invoices arrive at the top of the feed with the unread highlight. Higher-quality original: [webm](docs/videos/live-demo.webm) · [mp4](docs/videos/live-demo.mp4).
@@ -159,7 +159,7 @@ Darmowe rozszerzenie przeglądarki (MV3) o otwartym kodzie źródłowym. Bez bac
 ## Demo
 
 <p align="center">
-  <img src="docs/videos/live-demo.gif" alt="Demo na żywo: trzy świeże faktury przychodzące pojawiają się na górze listy w popupie z wyróżnieniem nieprzeczytanych" width="320" />
+  <img src="docs/videos/live-demo.gif?v=2" alt="Demo na żywo: trzy świeże faktury przychodzące pojawiają się na górze listy w popupie z wyróżnieniem nieprzeczytanych" width="320" />
 </p>
 
 Konfiguracja sejfu, wstępna synchronizacja, następnie trzy świeże faktury przychodzące pojawiają się na górze listy z wyróżnieniem nieprzeczytanych. Oryginał w lepszej jakości: [webm](docs/videos/live-demo.webm) · [mp4](docs/videos/live-demo.mp4).
