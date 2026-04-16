@@ -174,11 +174,20 @@ await new Promise((r) => setTimeout(r, 500));
 // set by the previous page's auto-mark-read. Take a second screenshot of
 // the post-injection state.
 // =========================================================================
-console.log("phase 2: opening fresh popup for the demo...");
+console.log("phase 2: opening fresh popup (dark theme) for the demo...");
 const demoPage = await context.newPage();
 await demoPage.setViewportSize(POPUP_VIEWPORT);
 await demoPage.goto(`chrome-extension://${extensionId}/popup/index.html`);
-await demoPage.waitForTimeout(2500);
+await demoPage.waitForTimeout(1500);
+
+// Set dark theme
+await demoPage.evaluate(() => {
+  document.documentElement.setAttribute("data-theme", "dark");
+  document.documentElement.classList.add("dark");
+  document.documentElement.classList.remove("light");
+  chrome.storage.local.set({ "config.theme": "dark" });
+});
+await demoPage.waitForTimeout(1000);
 
 await demoPage.screenshot({ path: resolve(OUT_DIR, "popup-baseline.png") });
 console.log("  ✓ popup-baseline.png");
@@ -230,7 +239,56 @@ console.log("  ✓ injected — fresh items should highlight at top of feed");
 await demoPage.waitForTimeout(2500);
 await demoPage.screenshot({ path: resolve(OUT_DIR, "popup-with-new-incoming.png") });
 console.log("  ✓ popup-with-new-incoming.png");
-await demoPage.waitForTimeout(5000);
+await demoPage.waitForTimeout(2000);
+
+// Mock invoice.fetchXml in the popup so clicking a feed item shows a
+// real-looking invoice modal instead of a KSeF auth error.
+const MOCK_FA3_XML = `<?xml version="1.0" encoding="UTF-8"?>
+<Faktura xmlns="http://crd.gov.pl/wzor/2025/06/25/13775/">
+  <Naglowek><KodFormularza kodSystemowy="FA (3)" wersjaSchemy="1-0E">FA</KodFormularza></Naglowek>
+  <Podmiot1><DaneIdentyfikacyjne><NIP>5861719741</NIP><Nazwa>Faktoria Tech S.A.</Nazwa></DaneIdentyfikacyjne><Adres><KodKraju>PL</KodKraju><AdresL1>ul. Marszałkowska 12, 00-001 Warszawa</AdresL1></Adres></Podmiot1>
+  <Podmiot2><DaneIdentyfikacyjne><NIP>8698281999</NIP><Nazwa>Test Buyer A Sp. z o.o.</Nazwa></DaneIdentyfikacyjne><Adres><KodKraju>PL</KodKraju><AdresL1>ul. Krakowskie Przedmieście 5, 00-068 Warszawa</AdresL1></Adres></Podmiot2>
+  <Fa>
+    <KodWaluty>PLN</KodWaluty>
+    <P_1>2026-04-16</P_1>
+    <P_1M>Warszawa</P_1M>
+    <P_2>FA/LIVE/2026/5000</P_2>
+    <P_6>2026-04-16</P_6>
+    <P_13_1>12350.00</P_13_1>
+    <P_14_1>2840.50</P_14_1>
+    <P_15>15190.50</P_15>
+    <Adnotacje><P_16>2</P_16><P_17>2</P_17><P_18>2</P_18><P_18A>2</P_18A><Zwolnienie><P_19N>1</P_19N></Zwolnienie></Adnotacje>
+    <FaWiersz><NrWierszaFa>1</NrWierszaFa><P_7>Wdrożenie systemu KSeF</P_7><P_8A>godz.</P_8A><P_8B>10</P_8B><P_9A>850.00</P_9A><P_11>8500.00</P_11><P_12>23</P_12></FaWiersz>
+    <FaWiersz><NrWierszaFa>2</NrWierszaFa><P_7>Audyt zgodności FA(3)</P_7><P_8A>szt.</P_8A><P_8B>1</P_8B><P_9A>3850.00</P_9A><P_11>3850.00</P_11><P_12>23</P_12></FaWiersz>
+    <Platnosc><TerminPlatnosci><Termin>2026-04-30</Termin></TerminPlatnosci><FormaPlatnosci>6</FormaPlatnosci></Platnosc>
+  </Fa>
+</Faktura>`;
+
+await demoPage.evaluate((mockXml) => {
+  const orig = chrome.runtime.sendMessage.bind(chrome.runtime);
+  chrome.runtime.sendMessage = (msg, callback) => {
+    if (msg && msg.type === "invoice.fetchXml") {
+      if (callback) callback({ ok: true, data: mockXml });
+      return;
+    }
+    return orig(msg, callback);
+  };
+}, MOCK_FA3_XML);
+
+// Click the first (newest) feed item to open the invoice modal
+const firstItem = demoPage.locator(".MuiListItemButton-root").first();
+if (await firstItem.count()) {
+  console.log("  opening invoice modal...");
+  await firstItem.click();
+  await demoPage.waitForTimeout(4000);
+  console.log("  ✓ invoice modal shown");
+  // Close modal
+  await demoPage.keyboard.press("Escape");
+  await demoPage.waitForTimeout(1500);
+} else {
+  console.log("  ⚠ no feed item to click");
+  await demoPage.waitForTimeout(3000);
+}
 
 const demoVideoPath = await demoPage.video()?.path();
 await demoPage.close();
