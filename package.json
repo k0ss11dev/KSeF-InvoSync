@@ -1,7 +1,7 @@
 {
   "name": "invo-sync",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Cross-browser MV3 extension: KSeF (test env) → Google Sheets. M0 = OAuth skeleton.",
   "license": "GPL-3.0-or-later",
   "author": "k0ss11",
