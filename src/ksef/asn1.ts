@@ -58,9 +58,23 @@ export function parseTLV(bytes: Uint8Array, offset: number): AsnNode {
     if (pos + numLengthBytes > bytes.length) {
       throw new Error("asn1: truncated input in length bytes");
     }
+    // Use arithmetic (not bitwise shift) — JavaScript's << is 32-bit signed,
+    // so a 4-byte length with the top bit set becomes negative, and the
+    // end-of-buffer check below trivially passes with a negative `end`,
+    // letting bytes.slice() silently return an empty array.
     length = 0;
     for (let i = 0; i < numLengthBytes; i++) {
-      length = (length << 8) | bytes[pos + i];
+      length = length * 256 + bytes[pos + i];
+    }
+    if (length < 0 || !Number.isFinite(length)) {
+      throw new Error("asn1: invalid length value");
+    }
+    // Sanity cap: no legitimate X.509 cert has an SPKI subtree anywhere
+    // near 10 MB. The 4-byte length field could encode up to 4 GiB —
+    // catching obviously-wrong values here keeps the parser honest.
+    const MAX_LENGTH = 10 * 1024 * 1024;
+    if (length > MAX_LENGTH) {
+      throw new Error(`asn1: length ${length} exceeds safety cap`);
     }
     pos += numLengthBytes;
   }

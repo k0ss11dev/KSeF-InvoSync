@@ -72,6 +72,39 @@ test.describe("parseTLV", () => {
       /indefinite-length/,
     );
   });
+
+  // -----------------------------------------------------------------
+  // Finding #3: 32-bit bitwise overflow in long-form length decoding.
+  // The old `length = (length << 8) | byte` loop produced negative
+  // numbers for 4-byte lengths with the top bit set, and `bytes.slice`
+  // silently returned an empty array. Parser now uses arithmetic
+  // (length * 256 + byte) and caps at 10 MB.
+  // -----------------------------------------------------------------
+
+  test("rejects 4-byte length with top bit set (would overflow << in legacy code)", () => {
+    // Tag 0x30, length 0x84 0x80 0x00 0x00 0x00 → 2^31 bytes declared
+    const bytes = new Uint8Array([0x30, 0x84, 0x80, 0x00, 0x00, 0x00]);
+    expect(() => parseTLV(bytes, 0)).toThrow(/length|exceeds/);
+  });
+
+  test("rejects 4-byte length near UInt32 max", () => {
+    // Tag 0x30, length 0x84 0xff 0xff 0xff 0xff → 2^32 - 1 bytes declared
+    const bytes = new Uint8Array([0x30, 0x84, 0xff, 0xff, 0xff, 0xff]);
+    expect(() => parseTLV(bytes, 0)).toThrow(/length|exceeds/);
+  });
+
+  test("accepts legitimate 3-byte long-form length (arithmetic regression check)", () => {
+    // Tag 0x30, length 0x83 0x01 0x00 0x00 → 65536 zero bytes
+    const bytes = new Uint8Array(5 + 65536);
+    bytes[0] = 0x30;
+    bytes[1] = 0x83;
+    bytes[2] = 0x01;
+    bytes[3] = 0x00;
+    bytes[4] = 0x00;
+    const node = parseTLV(bytes, 0);
+    expect(node.tag).toBe(0x30);
+    expect(node.length).toBe(65536);
+  });
 });
 
 test.describe("children", () => {
