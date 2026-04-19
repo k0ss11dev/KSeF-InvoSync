@@ -30,6 +30,7 @@
 // schema marks the relevant fields with `format: byte` which is the
 // OpenAPI convention for standard base64.
 
+import { redactBearerTokens } from "../shared/logger";
 import type { CryptoKey } from "../shared/web-crypto-types";
 // (we don't actually need that import — CryptoKey is a global, but I'm
 // keeping the JSDoc clear about what's coming from where)
@@ -110,7 +111,7 @@ export async function openOnlineSession(
   if (!response.ok) {
     const text = await response.text().catch(() => "");
     throw new Error(
-      `POST /sessions/online failed: ${response.status} ${response.statusText}${text ? ` — ${text}` : ""}`,
+      `POST /sessions/online failed: ${response.status} ${response.statusText}${text ? ` — ${redactBearerTokens(text)}` : ""}`,
     );
   }
 
@@ -190,7 +191,7 @@ export async function uploadInvoice(
   if (!response.ok) {
     const text = await response.text().catch(() => "");
     throw new Error(
-      `POST ${url} failed: ${response.status} ${response.statusText}${text ? ` — ${text}` : ""}`,
+      `POST ${url} failed: ${response.status} ${response.statusText}${text ? ` — ${redactBearerTokens(text)}` : ""}`,
     );
   }
 
@@ -217,7 +218,7 @@ export async function closeOnlineSession(opts: CloseOnlineSessionOpts): Promise<
   if (!response.ok && response.status !== 204) {
     const text = await response.text().catch(() => "");
     throw new Error(
-      `POST ${url} failed: ${response.status} ${response.statusText}${text ? ` — ${text}` : ""}`,
+      `POST ${url} failed: ${response.status} ${response.statusText}${text ? ` — ${redactBearerTokens(text)}` : ""}`,
     );
   }
 }

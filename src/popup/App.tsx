@@ -254,8 +254,11 @@ function StatusTab({ ksefWebApp }: { ksefWebApp: string }) {
 
   if (!vault) return <p className="muted small pad">{t("status_loading")}</p>;
 
-  // Not configured → point to Config tab
-  if (!vault.initialized || (!vault.unlocked && !vault.hasKsefToken)) {
+  // Not initialized → point to Config tab to set up the vault.
+  // NOTE: hasKsefToken is only meaningful when unlocked (it reads the vault),
+  // so it must not be in this gate — otherwise a locked-but-initialized vault
+  // would falsely show "not configured" instead of the unlock form below.
+  if (!vault.initialized) {
     return (
       <div className="pad">
         <p className="muted small">{t("status_not_configured")}</p>
@@ -1223,6 +1226,7 @@ function VaultConfig() {
               value={ksefToken}
               onChange={(e) => handleTokenChange(e.target.value)}
               placeholder={t("placeholder_ksef_token")}
+              helperText={t("ksef_token_perm_hint")}
             />
             <MuiTextField
               size="small"

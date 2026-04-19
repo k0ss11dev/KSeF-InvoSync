@@ -194,6 +194,74 @@ test.describe("vault e2e (chrome.storage.local round-trip)", () => {
     expect(result.hasKty).toBe(false);
   });
 
+  test("session cache is a wrapped blob too (no raw JWK anywhere)", async ({
+    serviceWorker,
+  }) => {
+    const result = await serviceWorker.evaluate(async ({ passphrase }) => {
+      const v = globalThis.__vaultForTests!;
+      await v.create(passphrase);
+      // Unlock state is already cached by create(); re-assert via reCacheKey
+      // in case any prior test left storage in a surprising state.
+      await v.reCacheKey();
+
+      const sessionStored = (await chrome.storage.session.get("vault.sessionKey"))["vault.sessionKey"];
+      return {
+        hasWrapped: sessionStored && typeof sessionStored === "object" && "wrapped" in sessionStored && "iv" in sessionStored,
+        hasKty: sessionStored && typeof sessionStored === "object" && "kty" in sessionStored,
+        hasK: sessionStored && typeof sessionStored === "object" && "k" in sessionStored,
+      };
+    }, { passphrase: PASSPHRASE });
+
+    expect(result.hasWrapped).toBe(true);
+    expect(result.hasKty).toBe(false);
+    expect(result.hasK).toBe(false);
+  });
+
+  test("restoreFromSession round-trips through the wrapped session cache", async ({
+    serviceWorker,
+  }) => {
+    const result = await serviceWorker.evaluate(async ({ passphrase, token }) => {
+      const v = globalThis.__vaultForTests!;
+      await v.create(passphrase);
+      await v.setKsefToken(token);
+
+      // Simulate SW suspension: wipe in-memory key but keep storages intact.
+      v.__testing.forgetUnlockedKey();
+
+      // Restore should succeed using the wrapped session cache.
+      const restored = await v.restoreFromSession();
+      const retrieved = restored ? await v.getKsefToken() : null;
+      return { restored, retrieved };
+    }, { passphrase: PASSPHRASE, token: SAMPLE_TOKEN });
+
+    expect(result.restored).toBe(true);
+    expect(result.retrieved).toBe(SAMPLE_TOKEN);
+  });
+
+  test("legacy raw-JWK in session cache is cleared on restore", async ({
+    serviceWorker,
+  }) => {
+    const result = await serviceWorker.evaluate(async ({ passphrase }) => {
+      const v = globalThis.__vaultForTests!;
+      await v.create(passphrase);
+
+      // Simulate a legacy pre-0.1.2 session cache with a raw JWK.
+      const fakeJwk = { kty: "oct", k: "AAAA", alg: "A256GCM", ext: true };
+      await chrome.storage.session.set({ "vault.sessionKey": fakeJwk });
+
+      v.__testing.forgetUnlockedKey();
+
+      // Restore should detect the legacy format and clear it. The wrapped
+      // session cache no longer exists so restore returns false overall.
+      const restored = await v.restoreFromSession();
+      const afterClear = (await chrome.storage.session.get("vault.sessionKey"))["vault.sessionKey"];
+      return { restored, legacyCleared: afterClear === undefined };
+    }, { passphrase: PASSPHRASE });
+
+    expect(result.restored).toBe(false);
+    expect(result.legacyCleared).toBe(true);
+  });
+
   test("wrapped persistent cache restores vault key after SW memory wipe", async ({
     serviceWorker,
   }) => {

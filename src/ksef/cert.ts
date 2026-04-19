@@ -8,7 +8,7 @@
 //   Filter to certs that are currently within their validFrom..validTo window.
 //   If multiple are valid, pick the one with the latest `validFrom`.
 
-import { log } from "../shared/logger";
+import { log, redactBearerTokens } from "../shared/logger";
 import { extractSpkiFromCertBase64 } from "./asn1";
 import type { PublicKeyCertificate } from "./types";
 
@@ -34,7 +34,7 @@ export async function fetchKsefTokenEncryptionKey(
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     throw new Error(
-      `GET ${url} failed: ${res.status} ${res.statusText}${text ? ` — ${text}` : ""}`,
+      `GET ${url} failed: ${res.status} ${res.statusText}${text ? ` — ${redactBearerTokens(text)}` : ""}`,
     );
   }
 

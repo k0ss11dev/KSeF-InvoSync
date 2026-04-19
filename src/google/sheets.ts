@@ -15,7 +15,40 @@
 import type { InvoiceMetadata } from "../ksef/types";
 
 import { t } from "../shared/i18n";
-import { log } from "../shared/logger";
+import { log, redactBearerTokens } from "../shared/logger";
+
+/**
+ * Neutralise spreadsheet formula injection. Google Sheets (and Excel) treat
+ * cells beginning with `=`, `+`, `-`, `@`, tab, or CR as formulas. KSeF
+ * invoice fields (seller name, buyer name, invoice number, etc.) are
+ * attacker-controlled from the extension's perspective: anyone who can
+ * issue an invoice to the user can put a formula in these fields.
+ *
+ * Prefixing with a single quote tells Sheets "this is text, not a formula"
+ * and the quote itself is not rendered. The `USER_ENTERED` input mode would
+ * otherwise happily execute `=HYPERLINK("https://evil/phish",...)` the
+ * moment the user opens their Sheet.
+ *
+ * Applied to every string value in mapInvoiceToRow. Numeric and null values
+ * skip this — the guard is a no-op on non-strings but the explicit check
+ * keeps the rule obvious for future edits.
+ */
+export function sanitizeCellValue<T extends string | number | null>(value: T): T {
+  if (typeof value !== "string" || value.length === 0) return value;
+  const first = value.charCodeAt(0);
+  // = 0x3d, + 0x2b, - 0x2d, @ 0x40, \t 0x09, \r 0x0d
+  if (
+    first === 0x3d ||
+    first === 0x2b ||
+    first === 0x2d ||
+    first === 0x40 ||
+    first === 0x09 ||
+    first === 0x0d
+  ) {
+    return ("'" + value) as T;
+  }
+  return value;
+}
 
 const DEFAULT_API_BASE = "https://sheets.googleapis.com";
 const DEFAULT_TAB_NAME = "Invoices";
@@ -240,7 +273,7 @@ export async function createSpreadsheetFromTemplate(
     const text = await response.text().catch(() => "");
     log("warn", `Sheets: create failed ${response.status} ${response.statusText} — ${text}`);
     throw new Error(
-      `POST ${baseUrl}/v4/spreadsheets failed: ${response.status} ${response.statusText}${text ? ` — ${text}` : ""}`,
+      `POST ${baseUrl}/v4/spreadsheets failed: ${response.status} ${response.statusText}${text ? ` — ${redactBearerTokens(text)}` : ""}`,
     );
   }
 
@@ -310,7 +343,7 @@ export async function appendRows(opts: AppendRowsOpts): Promise<AppendRowsResult
     const text = await response.text().catch(() => "");
     log("warn", `Sheets: append failed ${response.status} ${response.statusText} — ${text}`);
     throw new Error(
-      `POST ${url} failed: ${response.status} ${response.statusText}${text ? ` — ${text}` : ""}`,
+      `POST ${url} failed: ${response.status} ${response.statusText}${text ? ` — ${redactBearerTokens(text)}` : ""}`,
     );
   }
 
@@ -494,7 +527,7 @@ export async function createDashboardCharts(
     const text = await response.text().catch(() => "");
     log("warn", `Sheets: chart batchUpdate failed ${response.status} ${response.statusText} — ${text}`);
     throw new Error(
-      `POST ${url} failed: ${response.status} ${response.statusText}${text ? ` — ${text}` : ""}`,
+      `POST ${url} failed: ${response.status} ${response.statusText}${text ? ` — ${redactBearerTokens(text)}` : ""}`,
     );
   }
   log("info", "Sheets: dashboard charts created");
@@ -514,21 +547,24 @@ export async function createDashboardCharts(
 export function mapInvoiceToRow(
   invoice: InvoiceMetadata,
 ): Array<string | number | null> {
+  // All attacker-controlled string fields go through sanitizeCellValue to
+  // neutralise spreadsheet formula injection. Numeric fields pass through
+  // unchanged so USER_ENTERED input mode still parses them as numbers.
   return [
-    invoice.ksefNumber ?? "",
-    invoice.invoiceNumber ?? "",
-    invoice.issueDate ?? "",
-    invoice.permanentStorageDate ?? "",
-    invoice.seller?.nip ?? invoice.seller?.identifier?.value ?? "",
-    invoice.seller?.name ?? "",
-    invoice.buyer?.nip ?? invoice.buyer?.identifier?.value ?? "",
-    invoice.buyer?.name ?? "",
+    sanitizeCellValue(invoice.ksefNumber ?? ""),
+    sanitizeCellValue(invoice.invoiceNumber ?? ""),
+    sanitizeCellValue(invoice.issueDate ?? ""),
+    sanitizeCellValue(invoice.permanentStorageDate ?? ""),
+    sanitizeCellValue(invoice.seller?.nip ?? invoice.seller?.identifier?.value ?? ""),
+    sanitizeCellValue(invoice.seller?.name ?? ""),
+    sanitizeCellValue(invoice.buyer?.nip ?? invoice.buyer?.identifier?.value ?? ""),
+    sanitizeCellValue(invoice.buyer?.name ?? ""),
     invoice.netAmount ?? null,
     invoice.vatAmount ?? null,
     invoice.grossAmount ?? null,
-    invoice.currency ?? "",
-    invoice.invoicingMode ?? "",
-    invoice.invoiceType ?? "",
+    sanitizeCellValue(invoice.currency ?? ""),
+    sanitizeCellValue(invoice.invoicingMode ?? ""),
+    sanitizeCellValue(invoice.invoiceType ?? ""),
   ];
 }
 

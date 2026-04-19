@@ -56,22 +56,25 @@ import * as googleSheets from "../google/sheets";
 import * as googleDrive from "../google/drive";
 
 // Test bridges: expose internal modules on globalThis so e2e tests can call
-// them via serviceWorker.evaluate(). Production behaviour is unchanged
-// because the popup never reads these — only test code does. The bridges
-// are harmless in production but we still feature-gate them behind a flag
-// in case we want to strip them from a real release build later.
-(globalThis as unknown as { __vaultForTests: typeof vault }).__vaultForTests = vault;
-(globalThis as unknown as { __persistentConfigForTests: typeof persistentConfig }).__persistentConfigForTests = persistentConfig;
-(globalThis as unknown as { __ksefForTests: typeof ksefCert }).__ksefForTests = ksefCert;
-(globalThis as unknown as { __ksefAuthForTests: typeof ksefAuth }).__ksefAuthForTests = ksefAuth;
-(globalThis as unknown as { __ksefClientForTests: typeof ksefClient }).__ksefClientForTests = ksefClient;
-(globalThis as unknown as { __ksefSyncForTests: typeof ksefSync }).__ksefSyncForTests = ksefSync;
-(globalThis as unknown as { __ksefUploadForTests: typeof ksefUpload }).__ksefUploadForTests = ksefUpload;
-(globalThis as unknown as { __fa3BuilderForTests: typeof fa3Builder }).__fa3BuilderForTests = fa3Builder;
-(globalThis as unknown as { __fa3TestDataForTests: typeof fa3TestData }).__fa3TestDataForTests = fa3TestData;
-(globalThis as unknown as { __sheetsForTests: typeof googleSheets }).__sheetsForTests = googleSheets;
-(globalThis as unknown as { __driveForTests: typeof googleDrive }).__driveForTests = googleDrive;
-(globalThis as unknown as { __autoSyncForTests: typeof autoSyncMod }).__autoSyncForTests = autoSyncMod;
+// them via serviceWorker.evaluate(). Gated behind the __TEST_BRIDGES__ build
+// flag (true in dev builds, false when BUILD_FOR_STORE=1) so store builds
+// strip this block entirely via esbuild's dead-code elimination — removing
+// an attack surface where any code running in the SW context could call
+// globalThis.__vaultForTests.getKsefToken() while the vault is unlocked.
+if (__TEST_BRIDGES__) {
+  (globalThis as unknown as { __vaultForTests: typeof vault }).__vaultForTests = vault;
+  (globalThis as unknown as { __persistentConfigForTests: typeof persistentConfig }).__persistentConfigForTests = persistentConfig;
+  (globalThis as unknown as { __ksefForTests: typeof ksefCert }).__ksefForTests = ksefCert;
+  (globalThis as unknown as { __ksefAuthForTests: typeof ksefAuth }).__ksefAuthForTests = ksefAuth;
+  (globalThis as unknown as { __ksefClientForTests: typeof ksefClient }).__ksefClientForTests = ksefClient;
+  (globalThis as unknown as { __ksefSyncForTests: typeof ksefSync }).__ksefSyncForTests = ksefSync;
+  (globalThis as unknown as { __ksefUploadForTests: typeof ksefUpload }).__ksefUploadForTests = ksefUpload;
+  (globalThis as unknown as { __fa3BuilderForTests: typeof fa3Builder }).__fa3BuilderForTests = fa3Builder;
+  (globalThis as unknown as { __fa3TestDataForTests: typeof fa3TestData }).__fa3TestDataForTests = fa3TestData;
+  (globalThis as unknown as { __sheetsForTests: typeof googleSheets }).__sheetsForTests = googleSheets;
+  (globalThis as unknown as { __driveForTests: typeof googleDrive }).__driveForTests = googleDrive;
+  (globalThis as unknown as { __autoSyncForTests: typeof autoSyncMod }).__autoSyncForTests = autoSyncMod;
+}
 
 // --- Auto-sync wiring (M3 sub-turn 4) ------------------------------------
 // The alarm is driven by a flag in persistent-config (default OFF). On SW
@@ -82,10 +85,15 @@ import * as googleDrive from "../google/drive";
 // when they open the popup and unlock, without waiting up to 30 min).
 
 chrome.alarms.onAlarm.addListener((alarm) => {
+  log("info", `[autosync-debug] onAlarm fired: name=${alarm.name}`);
   if (alarm.name !== AUTO_SYNC_ALARM_NAME) return;
-  void runBackgroundSyncIfReady().catch((err) => {
-    log("warn", "onAlarm handler threw (non-fatal):", err);
-  });
+  void runBackgroundSyncIfReady()
+    .then((res) => {
+      log("info", `[autosync-debug] runBackgroundSyncIfReady → ${JSON.stringify(res)}`);
+    })
+    .catch((err) => {
+      log("warn", "onAlarm handler threw (non-fatal):", err);
+    });
 });
 
 chrome.runtime.onStartup.addListener(() => {
@@ -115,6 +123,14 @@ chrome.idle.onStateChanged.addListener((newState) => {
 // here also handles the "enable flag was toggled while SW was asleep"
 // case (popup could, in theory, write directly to storage, though in
 // practice it goes through the message router below).
+void chrome.alarms.getAll().then((alarms) => {
+  log(
+    "info",
+    `[autosync-debug] SW wake — existing alarms: ${JSON.stringify(
+      alarms.map((a) => ({ name: a.name, period: a.periodInMinutes, inSec: Math.round((a.scheduledTime - Date.now()) / 1000) })),
+    )}`,
+  );
+});
 void ensureAlarmMatchesConfig().catch((err) => {
   log("warn", "initial ensureAlarmMatchesConfig failed:", err);
 });

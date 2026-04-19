@@ -22,6 +22,7 @@ const PUBLIC = resolve(ROOT, "public");
 const BROWSERS = process.argv[2] ? [process.argv[2]] : ["chrome", "firefox"];
 
 const env = await loadEnv();
+const pkg = JSON.parse(await readFile(resolve(ROOT, "package.json"), "utf8"));
 
 for (const browser of BROWSERS) {
   await buildOne(browser);
@@ -44,10 +45,21 @@ async function buildOne(browser) {
   await mkdir(resolve(outDir, "background"), { recursive: true });
   await mkdir(resolve(outDir, "options"), { recursive: true });
 
+  const isStoreBuild = process.env.BUILD_FOR_STORE === "1";
+
   const defines = {
     __GOOGLE_CLIENT_ID__: JSON.stringify(env.GOOGLE_CLIENT_ID),
     __GOOGLE_CLIENT_SECRET__: JSON.stringify(env.GOOGLE_CLIENT_SECRET),
-    "process.env.NODE_ENV": JSON.stringify("development"),
+    // Gate the SW test bridges: false in store builds so esbuild DCE strips
+    // the entire `if (__TEST_BRIDGES__) { ... }` block (finding #1).
+    __TEST_BRIDGES__: JSON.stringify(!isStoreBuild),
+    // Extension version, sourced from package.json, so the Settings page can
+    // render it without importing package.json at runtime.
+    __APP_VERSION__: JSON.stringify(pkg.version),
+    // Production React build for store — smaller, faster, no dev warnings /
+    // introspection surface (finding #2). Dev stays on "development" so
+    // React DevTools + useful error messages work during testing.
+    "process.env.NODE_ENV": JSON.stringify(isStoreBuild ? "production" : "development"),
   };
 
   const commonOptions = {
@@ -55,8 +67,13 @@ async function buildOne(browser) {
     format: "esm",
     target: ["es2022", "chrome120", "firefox121"],
     jsx: "automatic",
-    minify: false,
-    sourcemap: "inline",
+    // Store builds: full minification (whitespace + identifiers + syntax).
+    // Dev builds: readable output but still DCE the __TEST_BRIDGES__ block.
+    minify: isStoreBuild,
+    minifySyntax: isStoreBuild,
+    // Store builds: no sourcemap shipped to end users.
+    // Dev builds: inline sourcemap for in-browser debugging.
+    sourcemap: isStoreBuild ? false : "inline",
     define: defines,
     logLevel: "info",
   };

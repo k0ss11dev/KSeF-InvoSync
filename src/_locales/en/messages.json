@@ -32,6 +32,7 @@
   "placeholder_passphrase": { "message": "6+ characters, choose something memorable" },
   "field_ksef_token": { "message": "KSeF token" },
   "placeholder_ksef_token": { "message": "from KSeF web app \u2192 Tokens" },
+  "ksef_token_perm_hint": { "message": "Only the \u201cview invoices\u201d permission is required when generating the token." },
   "field_nip": { "message": "NIP" },
   "placeholder_nip": { "message": "10-digit Polish tax ID" },
   "button_setup": { "message": "Set up vault" },

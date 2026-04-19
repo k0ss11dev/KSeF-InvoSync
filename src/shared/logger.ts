@@ -55,3 +55,15 @@ export function getLogBuffer(): string[] {
 export function clearLogBuffer(): void {
   buffer.length = 0;
 }
+
+// Finding #7: error messages built from upstream HTTP response bodies can
+// echo back bearer tokens or JWTs that were already leaked by the remote
+// (for instance, a verbose 401 body that includes the rejected Authorization
+// header). Scrub before the string reaches console, log buffer, or notification.
+const BEARER_OR_JWT = /(bearer\s+|eyJ)[A-Za-z0-9_\-.]{20,}/gi;
+
+/** Replace bearer tokens and JWT-shaped substrings with [REDACTED]. */
+export function redactBearerTokens(text: string): string {
+  if (typeof text !== "string" || text.length === 0) return text;
+  return text.replace(BEARER_OR_JWT, "[REDACTED]");
+}

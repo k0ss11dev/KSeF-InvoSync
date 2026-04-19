@@ -1,0 +1,42 @@
+# Custom gitleaks rules for KSeF InvoSync.
+#
+# The default gitleaks ruleset catches generic API keys, AWS/GCP tokens, etc.
+# We extend it with KSeF-specific patterns so a test-env token accidentally
+# pasted into a source file or committed log is blocked at pre-commit.
+#
+# KSeF token bundle format (from tokens issued via
+# test.ksef.mf.gov.pl → Tokeny → "wygeneruj"):
+#
+#   YYYYMMDD-EC-XXXXXXXXXX-XXXXXXXXXX-XX | nip-NNNNNNNNNN | <64 hex chars>
+#
+# Example (fake — test env only, already revoked):
+#   20260419-EC-242FC40000-C336DAF9D4-8F|nip-9879041101|816039d119914e34844bb08df950b10258cd63e37dad4a378b37f258de092df1
+#
+# The last segment (64 hex) is the actual secret. We have two rules:
+#   1. ksef-api-token        — the full bundle (high confidence)
+#   2. ksef-token-secret-tail — only the `nip-…|<64-hex>` tail (still sensitive
+#                               on its own — the prefix can be re-derived)
+
+title = "KSeF InvoSync custom rules"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "ksef-api-token"
+description = "KSeF API token bundle (date-EC-segments|nip-XXXXXXXXXX|<64-hex secret>)"
+regex = '''\d{8}-EC-[A-Fa-f0-9]{10}-[A-Fa-f0-9]{10}-[A-Fa-f0-9]{2}\|nip-\d{10}\|[a-fA-F0-9]{64}'''
+tags = ["ksef", "api-token", "secret"]
+
+[[rules]]
+id = "ksef-token-secret-tail"
+description = "Trailing NIP + 64-hex portion of a KSeF token (secret on its own)"
+regex = '''nip-\d{10}\|[a-fA-F0-9]{64}'''
+tags = ["ksef", "api-token", "secret"]
+
+# Allowlist: scripts/capture-screenshots.mjs uses a visibly-fake placeholder
+# token (all-X segments + "deadbeefcafebabe…") so the UI screenshot recorder
+# can populate the setup form without a real credential. Skipping the file
+# rather than the whole pattern keeps the rule strict everywhere else.
+  [rules.allowlist]
+  paths = ['''scripts/capture-screenshots\.mjs$''']

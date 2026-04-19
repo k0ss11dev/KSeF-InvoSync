@@ -18,7 +18,7 @@
 // the immediate "new file each sync" problem (every prior auto-created
 // sheet shows up in the picker) without expanding the OAuth surface area.
 
-import { log } from "../shared/logger";
+import { log, redactBearerTokens } from "../shared/logger";
 
 const DEFAULT_API_BASE = "https://www.googleapis.com";
 
@@ -77,7 +77,7 @@ export async function listAppCreatedSpreadsheets(
     const text = await response.text().catch(() => "");
     log("warn", `Drive: list failed ${response.status} ${response.statusText} — ${text}`);
     throw new Error(
-      `GET ${url} failed: ${response.status} ${response.statusText}${text ? ` — ${text}` : ""}`,
+      `GET ${url} failed: ${response.status} ${response.statusText}${text ? ` — ${redactBearerTokens(text)}` : ""}`,
     );
   }
 
