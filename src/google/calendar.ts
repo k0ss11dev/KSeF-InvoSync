@@ -2,7 +2,7 @@
 // Google Calendar API v3 client — minimal: create an event on the
 // primary calendar.
 
-import { log } from "../shared/logger";
+import { log, redactBearerTokens } from "../shared/logger";
 
 const DEFAULT_API_BASE = "https://www.googleapis.com";
 
@@ -83,7 +83,7 @@ export async function createCalendarEvent(
     const text = await response.text().catch(() => "");
     log("warn", `Calendar: create event failed ${response.status} ${response.statusText} — ${text}`);
     throw new Error(
-      `POST ${url} failed: ${response.status} ${response.statusText}${text ? ` — ${text}` : ""}`,
+      `POST ${url} failed: ${response.status} ${response.statusText}${text ? ` — ${redactBearerTokens(text)}` : ""}`,
     );
   }
 
@@ -116,7 +116,7 @@ export async function listCalendars(
     const text = await response.text().catch(() => "");
     log("warn", `Calendar: list failed ${response.status} ${response.statusText} — ${text}`);
     throw new Error(
-      `GET ${url} failed: ${response.status} ${response.statusText}${text ? ` — ${text}` : ""}`,
+      `GET ${url} failed: ${response.status} ${response.statusText}${text ? ` — ${redactBearerTokens(text)}` : ""}`,
     );
   }
 

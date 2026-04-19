@@ -17,7 +17,7 @@
 // lived refresh token, in chrome.storage.session for the short-lived access
 // token). This module is pure I/O orchestration.
 
-import { log } from "../shared/logger";
+import { log, redactBearerTokens } from "../shared/logger";
 import {
   encryptKsefTokenEnvelope,
   fetchKsefTokenEncryptionKey,
@@ -155,7 +155,7 @@ export async function terminateKsefSession(opts: {
   if (!res.ok && res.status !== 204) {
     const text = await res.text().catch(() => "");
     throw new Error(
-      `DELETE ${url} failed: ${res.status} ${res.statusText}${text ? ` — ${text}` : ""}`,
+      `DELETE ${url} failed: ${res.status} ${res.statusText}${text ? ` — ${redactBearerTokens(text)}` : ""}`,
     );
   }
 }
@@ -180,7 +180,7 @@ async function pollAuthStatusUntilSuccess(
     if (!response.ok) {
       const text = await response.text().catch(() => "");
       throw new Error(
-        `GET ${url} failed: ${response.status} ${response.statusText}${text ? ` — ${text}` : ""}`,
+        `GET ${url} failed: ${response.status} ${response.statusText}${text ? ` — ${redactBearerTokens(text)}` : ""}`,
       );
     }
 
@@ -232,7 +232,7 @@ async function postJson<T>(url: string, opts: PostJsonOpts = {}): Promise<T> {
   if (!response.ok) {
     const text = await response.text().catch(() => "");
     throw new Error(
-      `POST ${url} failed: ${response.status} ${response.statusText}${text ? ` — ${text}` : ""}`,
+      `POST ${url} failed: ${response.status} ${response.statusText}${text ? ` — ${redactBearerTokens(text)}` : ""}`,
     );
   }
 

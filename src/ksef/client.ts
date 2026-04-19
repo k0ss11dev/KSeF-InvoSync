@@ -6,6 +6,7 @@
 // Sub-turn 1 of M1c: single-page invoice metadata query only. Pagination
 // loop helper and other endpoints land in sub-turns 2 and 3.
 
+import { redactBearerTokens } from "../shared/logger";
 import type {
   InvoiceMetadata,
   InvoiceQueryFilters,
@@ -56,7 +57,7 @@ export async function queryInvoiceMetadata(
   if (!response.ok) {
     const text = await response.text().catch(() => "");
     throw new Error(
-      `POST ${url} failed: ${response.status} ${response.statusText}${text ? ` — ${text}` : ""}`,
+      `POST ${url} failed: ${response.status} ${response.statusText}${text ? ` — ${redactBearerTokens(text)}` : ""}`,
     );
   }
 
@@ -154,7 +155,7 @@ export async function fetchInvoiceContent(opts: {
   if (!resp.ok) {
     const text = await resp.text().catch(() => "");
     throw new Error(
-      `GET ${url} failed: ${resp.status} ${resp.statusText}${text ? ` — ${text}` : ""}`,
+      `GET ${url} failed: ${resp.status} ${resp.statusText}${text ? ` — ${redactBearerTokens(text)}` : ""}`,
     );
   }
   return resp.text();

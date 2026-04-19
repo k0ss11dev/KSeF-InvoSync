@@ -15,7 +15,7 @@
 import type { InvoiceMetadata } from "../ksef/types";
 
 import { t } from "../shared/i18n";
-import { log } from "../shared/logger";
+import { log, redactBearerTokens } from "../shared/logger";
 
 /**
  * Neutralise spreadsheet formula injection. Google Sheets (and Excel) treat
@@ -273,7 +273,7 @@ export async function createSpreadsheetFromTemplate(
     const text = await response.text().catch(() => "");
     log("warn", `Sheets: create failed ${response.status} ${response.statusText} — ${text}`);
     throw new Error(
-      `POST ${baseUrl}/v4/spreadsheets failed: ${response.status} ${response.statusText}${text ? ` — ${text}` : ""}`,
+      `POST ${baseUrl}/v4/spreadsheets failed: ${response.status} ${response.statusText}${text ? ` — ${redactBearerTokens(text)}` : ""}`,
     );
   }
 
@@ -343,7 +343,7 @@ export async function appendRows(opts: AppendRowsOpts): Promise<AppendRowsResult
     const text = await response.text().catch(() => "");
     log("warn", `Sheets: append failed ${response.status} ${response.statusText} — ${text}`);
     throw new Error(
-      `POST ${url} failed: ${response.status} ${response.statusText}${text ? ` — ${text}` : ""}`,
+      `POST ${url} failed: ${response.status} ${response.statusText}${text ? ` — ${redactBearerTokens(text)}` : ""}`,
     );
   }
 
@@ -527,7 +527,7 @@ export async function createDashboardCharts(
     const text = await response.text().catch(() => "");
     log("warn", `Sheets: chart batchUpdate failed ${response.status} ${response.statusText} — ${text}`);
     throw new Error(
-      `POST ${url} failed: ${response.status} ${response.statusText}${text ? ` — ${text}` : ""}`,
+      `POST ${url} failed: ${response.status} ${response.statusText}${text ? ` — ${redactBearerTokens(text)}` : ""}`,
     );
   }
   log("info", "Sheets: dashboard charts created");
