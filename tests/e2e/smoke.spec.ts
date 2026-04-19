@@ -27,9 +27,10 @@ test.describe("M0 smoke", () => {
 
     await page.goto(`chrome-extension://${extensionId}/popup/index.html`);
 
-    // New tabbed layout: Status + Config tabs visible
-    await expect(page.getByRole("button", { name: /status/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: /config/i })).toBeVisible();
+    // Single-view layout (post-0.1.1): title + theme toggle + gear icon
+    // are always rendered in the header.
+    await expect(page.getByRole("button", { name: /settings|ustawienia/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /dark mode|light mode/i })).toBeVisible();
 
     expect(consoleErrors, "popup should not log any errors").toEqual([]);
     expect(pageErrors, "popup should not throw any uncaught errors").toEqual([]);

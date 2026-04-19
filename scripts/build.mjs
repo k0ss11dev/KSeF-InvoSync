@@ -44,13 +44,18 @@ async function buildOne(browser) {
   await mkdir(resolve(outDir, "background"), { recursive: true });
   await mkdir(resolve(outDir, "options"), { recursive: true });
 
+  const isStoreBuild = process.env.BUILD_FOR_STORE === "1";
+
   const defines = {
     __GOOGLE_CLIENT_ID__: JSON.stringify(env.GOOGLE_CLIENT_ID),
     __GOOGLE_CLIENT_SECRET__: JSON.stringify(env.GOOGLE_CLIENT_SECRET),
     // Gate the SW test bridges: false in store builds so esbuild DCE strips
     // the entire `if (__TEST_BRIDGES__) { ... }` block (finding #1).
-    __TEST_BRIDGES__: JSON.stringify(process.env.BUILD_FOR_STORE !== "1"),
-    "process.env.NODE_ENV": JSON.stringify("development"),
+    __TEST_BRIDGES__: JSON.stringify(!isStoreBuild),
+    // Production React build for store — smaller, faster, no dev warnings /
+    // introspection surface (finding #2). Dev stays on "development" so
+    // React DevTools + useful error messages work during testing.
+    "process.env.NODE_ENV": JSON.stringify(isStoreBuild ? "production" : "development"),
   };
 
   const commonOptions = {
@@ -58,12 +63,13 @@ async function buildOne(browser) {
     format: "esm",
     target: ["es2022", "chrome120", "firefox121"],
     jsx: "automatic",
-    minify: false,
-    // Enable syntax-level dead-code elimination for store builds so the
-    // `if (__TEST_BRIDGES__) { ... }` block collapses to nothing when the
-    // define resolves to false. Dev builds keep the if-statement readable.
-    minifySyntax: process.env.BUILD_FOR_STORE === "1",
-    sourcemap: "inline",
+    // Store builds: full minification (whitespace + identifiers + syntax).
+    // Dev builds: readable output but still DCE the __TEST_BRIDGES__ block.
+    minify: isStoreBuild,
+    minifySyntax: isStoreBuild,
+    // Store builds: no sourcemap shipped to end users.
+    // Dev builds: inline sourcemap for in-browser debugging.
+    sourcemap: isStoreBuild ? false : "inline",
     define: defines,
     logLevel: "info",
   };
