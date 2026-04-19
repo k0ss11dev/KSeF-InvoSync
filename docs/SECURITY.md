@@ -171,6 +171,19 @@ Test fixtures containing deliberately-generated dummy keys (e.g. `tests/fixtures
 
 ## Changelog
 
+### 0.1.2 — second security review follow-up
+
+Following a second full-source security pass, the following hardening was applied:
+
+- **Test bridges gated out of production builds**: the service-worker previously attached 12 `globalThis.__*ForTests` handles (vault, KSeF client, calendar, sheets, etc.) on every build. Store builds now pass `__TEST_BRIDGES__: false` and esbuild drops the entire block as dead code. Verified: `grep -c __vaultForTests dist/chrome/background/service-worker.js` returns `0` for store builds.
+- **Store builds run with `NODE_ENV=production`**: React devtools hooks and dev-only warnings are eliminated, the bundle is minified (popup.js 6.4 MB → 469 KB), and inline sourcemaps are no longer emitted (was previously leaking full `src/` contents).
+- **ASN.1 length-field overflow fix**: the long-form length parser used `(length << 8) | byte` which silently wraps to a negative `Int32` when the top bit of a 4-byte length is set, causing `bytes.slice(pos, pos+length)` to return empty. Replaced with arithmetic math and capped at 10 MB.
+- **Google Sheets formula-injection guard**: seller name, buyer name, invoice number, and other string fields written to spreadsheets under `USER_ENTERED` input mode are now prefixed with `'` when they start with `= + - @ \t \r`. A malicious KSeF-hosted invoice can no longer write a `=HYPERLINK` or `=IMPORTXML` formula into the user's sheet.
+- **Session cache matches persistent cache**: the `chrome.storage.session` cache used to hold a raw exported JWK of the vault key. It now stores the same wrapped-blob format as persistent cache, unwrapped against the non-extractable IndexedDB wrapping key with `extractable: false`. Legacy session JWKs are auto-detected and cleared on first run.
+- **`destroyAll` now wipes every key this module owns**: the previous implementation listed 8 of the 19 config keys, silently leaking the last-50 incoming-invoices cache, calendar event IDs, sync stats, and remember-vault state across "factory reset". A single `ALL_CONFIG_KEYS` array is now the source of truth.
+- **Bearer tokens / JWTs redacted from error messages**: every `fetch` helper that interpolated the response body into a thrown error now pipes that text through `redactBearerTokens`, so verbose upstream 401 bodies that echo back the rejected `Authorization` header no longer reach the log buffer or devtools console.
+- **New tests**: 9 unit tests for bearer-token redaction, 12 for Sheets sanitization, 3 for ASN.1 overflow, 1 e2e for `destroyAll` coverage, 3 e2e for the wrapped session cache.
+
 ### 0.1.1 — security review follow-up
 
 Following a full-source security review, the following hardening was applied:
