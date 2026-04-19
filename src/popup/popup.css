@@ -71,6 +71,12 @@ html, body {
 }
 [data-theme="dark"] .interval-select {
   border-color: rgba(255, 255, 255, 0.23);
+  background: #1e293b;
+  color: #e5e7eb;
+}
+[data-theme="dark"] .interval-select option {
+  background: #1e293b;
+  color: #e5e7eb;
 }
 
 .logs-pre {

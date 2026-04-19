@@ -22,6 +22,7 @@ const PUBLIC = resolve(ROOT, "public");
 const BROWSERS = process.argv[2] ? [process.argv[2]] : ["chrome", "firefox"];
 
 const env = await loadEnv();
+const pkg = JSON.parse(await readFile(resolve(ROOT, "package.json"), "utf8"));
 
 for (const browser of BROWSERS) {
   await buildOne(browser);
@@ -52,6 +53,9 @@ async function buildOne(browser) {
     // Gate the SW test bridges: false in store builds so esbuild DCE strips
     // the entire `if (__TEST_BRIDGES__) { ... }` block (finding #1).
     __TEST_BRIDGES__: JSON.stringify(!isStoreBuild),
+    // Extension version, sourced from package.json, so the Settings page can
+    // render it without importing package.json at runtime.
+    __APP_VERSION__: JSON.stringify(pkg.version),
     // Production React build for store — smaller, faster, no dev warnings /
     // introspection surface (finding #2). Dev stays on "development" so
     // React DevTools + useful error messages work during testing.

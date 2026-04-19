@@ -9,3 +9,5 @@ declare const __GOOGLE_CLIENT_SECRET__: string;
 // true in dev builds, false when BUILD_FOR_STORE=1 — gates the test-bridge
 // exports in the service worker so store builds strip them via DCE.
 declare const __TEST_BRIDGES__: boolean;
+// Extension version from package.json, displayed in the Settings page footer.
+declare const __APP_VERSION__: string;

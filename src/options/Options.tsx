@@ -83,9 +83,14 @@ export function Options() {
         <LogsSection />
         <DangerZone />
       </MuiStack>
-      <MuiTypography variant="caption" color="text.secondary" sx={{ display: "block", textAlign: "center", mt: 3 }}>
-        {t("footer_license")}
-      </MuiTypography>
+      <MuiStack spacing={0.25} sx={{ alignItems: "center", mt: 3 }}>
+        <MuiTypography variant="caption" color="text.secondary">
+          {t("footer_license")}
+        </MuiTypography>
+        <MuiTypography variant="caption" color="text.disabled">
+          v{__APP_VERSION__}
+        </MuiTypography>
+      </MuiStack>
     </MuiContainer>
   );
 }

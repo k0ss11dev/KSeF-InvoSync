@@ -32,6 +32,7 @@
   "placeholder_passphrase": { "message": "Min. 6 znak\u00f3w, wybierz co\u015b zapami\u0119tywalnego" },
   "field_ksef_token": { "message": "Token KSeF" },
   "placeholder_ksef_token": { "message": "z aplikacji KSeF \u2192 Tokeny" },
+  "ksef_token_perm_hint": { "message": "Generuj\u0105c token wystarczy uprawnienie \u201epodgl\u0105d faktur\u201d." },
   "field_nip": { "message": "NIP" },
   "placeholder_nip": { "message": "10-cyfrowy numer identyfikacji podatkowej" },
   "button_setup": { "message": "Skonfiguruj sejf" },
