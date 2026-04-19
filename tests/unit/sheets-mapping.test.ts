@@ -7,6 +7,7 @@ import {
   DEFAULT_KSEF_HEADERS,
   mapInvoiceToRow,
   mapInvoicesToRows,
+  sanitizeCellValue,
 } from "../../src/google/sheets";
 import type { InvoiceMetadata } from "../../src/ksef/types";
 
@@ -131,5 +132,82 @@ test.describe("mapInvoicesToRows", () => {
 
   test("returns an empty array for an empty input", () => {
     expect(mapInvoicesToRows([])).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Finding #4: Formula injection via KSeF-supplied seller/buyer names etc.
+// Sheets treats leading = + - @ \t \r as formula starts under USER_ENTERED
+// input mode. sanitizeCellValue prefixes a single quote to neutralise.
+// ---------------------------------------------------------------------------
+
+test.describe("sanitizeCellValue (formula injection guard)", () => {
+  test("prefixes = with single quote", () => {
+    expect(sanitizeCellValue("=cmd|'/c calc'!A1")).toBe("'=cmd|'/c calc'!A1");
+  });
+
+  test("prefixes + with single quote", () => {
+    expect(sanitizeCellValue("+1234567890")).toBe("'+1234567890");
+  });
+
+  test("prefixes - with single quote", () => {
+    expect(sanitizeCellValue("-discount")).toBe("'-discount");
+  });
+
+  test("prefixes @ with single quote", () => {
+    expect(sanitizeCellValue("@user")).toBe("'@user");
+  });
+
+  test("prefixes leading tab", () => {
+    expect(sanitizeCellValue("\t=evil")).toBe("'\t=evil");
+  });
+
+  test("prefixes leading CR", () => {
+    expect(sanitizeCellValue("\r=evil")).toBe("'\r=evil");
+  });
+
+  test("passes normal text through unchanged", () => {
+    expect(sanitizeCellValue("ACME Corp")).toBe("ACME Corp");
+    expect(sanitizeCellValue("Sp. z o.o.")).toBe("Sp. z o.o.");
+    expect(sanitizeCellValue("5555555555")).toBe("5555555555");
+  });
+
+  test("passes numeric values through unchanged (not stringified)", () => {
+    expect(sanitizeCellValue(100.5)).toBe(100.5);
+    expect(sanitizeCellValue(0)).toBe(0);
+    expect(sanitizeCellValue(null)).toBe(null);
+  });
+});
+
+test.describe("mapInvoiceToRow — formula injection through real invoice fields", () => {
+  test("neutralises malicious seller name", () => {
+    const inv: InvoiceMetadata = {
+      ...FULL_INVOICE,
+      seller: { nip: "5555555555", name: "=HYPERLINK(\"https://evil\",\"Faktura\")" },
+    };
+    const row = mapInvoiceToRow(inv);
+    // Column 5 (index 5) is seller name
+    expect(row[5]).toBe("'=HYPERLINK(\"https://evil\",\"Faktura\")");
+  });
+
+  test("neutralises malicious buyer name", () => {
+    const inv: InvoiceMetadata = {
+      ...FULL_INVOICE,
+      buyer: { nip: "1234567890", name: "@attacker" },
+    };
+    const row = mapInvoiceToRow(inv);
+    expect(row[7]).toBe("'@attacker");
+  });
+
+  test("neutralises malicious invoice number", () => {
+    const inv: InvoiceMetadata = { ...FULL_INVOICE, invoiceNumber: "-EVIL" };
+    const row = mapInvoiceToRow(inv);
+    expect(row[1]).toBe("'-EVIL");
+  });
+
+  test("leaves numeric amounts unchanged (not wrapped)", () => {
+    const row = mapInvoiceToRow(FULL_INVOICE);
+    expect(row[8]).toBe(1000); // netAmount
+    expect(typeof row[8]).toBe("number");
   });
 });
