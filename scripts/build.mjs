@@ -47,6 +47,9 @@ async function buildOne(browser) {
   const defines = {
     __GOOGLE_CLIENT_ID__: JSON.stringify(env.GOOGLE_CLIENT_ID),
     __GOOGLE_CLIENT_SECRET__: JSON.stringify(env.GOOGLE_CLIENT_SECRET),
+    // Gate the SW test bridges: false in store builds so esbuild DCE strips
+    // the entire `if (__TEST_BRIDGES__) { ... }` block (finding #1).
+    __TEST_BRIDGES__: JSON.stringify(process.env.BUILD_FOR_STORE !== "1"),
     "process.env.NODE_ENV": JSON.stringify("development"),
   };
 
@@ -56,6 +59,10 @@ async function buildOne(browser) {
     target: ["es2022", "chrome120", "firefox121"],
     jsx: "automatic",
     minify: false,
+    // Enable syntax-level dead-code elimination for store builds so the
+    // `if (__TEST_BRIDGES__) { ... }` block collapses to nothing when the
+    // define resolves to false. Dev builds keep the if-statement readable.
+    minifySyntax: process.env.BUILD_FOR_STORE === "1",
     sourcemap: "inline",
     define: defines,
     logLevel: "info",

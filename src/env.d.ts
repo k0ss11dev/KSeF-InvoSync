@@ -6,3 +6,6 @@
 
 declare const __GOOGLE_CLIENT_ID__: string;
 declare const __GOOGLE_CLIENT_SECRET__: string;
+// true in dev builds, false when BUILD_FOR_STORE=1 — gates the test-bridge
+// exports in the service worker so store builds strip them via DCE.
+declare const __TEST_BRIDGES__: boolean;
