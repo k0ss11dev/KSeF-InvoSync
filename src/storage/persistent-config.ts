@@ -51,6 +51,32 @@ const SHEETS_ENABLED_KEY = "config.sheetsEnabled";
 const SHEETS_SYNC_OUTGOING_KEY = "config.sheetsSyncOutgoing";
 const SHEETS_SYNC_INCOMING_KEY = "config.sheetsSyncIncoming";
 
+// All static config keys this module owns. Used by destroyAll(). Kept as
+// an explicit list (rather than inferring from a prefix) so that adding a
+// new key without updating this array is a visible change at review time
+// — accidental data retention through an un-listed key costs privacy.
+const ALL_CONFIG_KEYS: readonly string[] = [
+  TARGET_SPREADSHEET_ID_KEY,
+  TARGET_SPREADSHEET_NAME_KEY,
+  AUTO_SYNC_ENABLED_KEY,
+  AUTO_SYNC_INTERVAL_KEY,
+  TARGET_SHEET_URL_KEY,
+  NOTIFICATION_CONFIG_KEY,
+  INCOMING_TRACKED_KEY,
+  INCOMING_FEED_KEY,
+  INCOMING_READ_KEY,
+  KSEF_ENVIRONMENT_KEY,
+  LAST_SYNC_STATS_KEY,
+  REMEMBER_VAULT_KEY,
+  TARGET_CALENDAR_ID_KEY,
+  FETCH_ON_RESUME_KEY,
+  CALENDAR_ENABLED_KEY,
+  INVOICE_CALENDAR_EVENTS_KEY,
+  SHEETS_ENABLED_KEY,
+  SHEETS_SYNC_OUTGOING_KEY,
+  SHEETS_SYNC_INCOMING_KEY,
+];
+
 // M3 sub-turn 3: dedup tracking. One list of KSeF reference numbers per
 // spreadsheet id, stored under `sync.tracked.<spreadsheetId>`. Keeping them
 // in distinct keys (instead of one fat object) means a single sync only
@@ -514,14 +540,7 @@ export async function destroyAll(): Promise<void> {
     k.startsWith(TRACKED_KEY_PREFIX),
   );
   await chrome.storage.local.remove([
-    TARGET_SPREADSHEET_ID_KEY,
-    TARGET_SPREADSHEET_NAME_KEY,
-    AUTO_SYNC_ENABLED_KEY,
-    NOTIFICATION_CONFIG_KEY,
-    INCOMING_TRACKED_KEY,
-    KSEF_ENVIRONMENT_KEY,
-    LAST_SYNC_STATS_KEY,
-    REMEMBER_VAULT_KEY,
+    ...ALL_CONFIG_KEYS,
     ...trackedKeys,
   ]);
 }
