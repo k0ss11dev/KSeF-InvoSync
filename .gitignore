@@ -12,6 +12,7 @@ tests/fixtures/.seed-invoice-*.xml
 manifests/*.key.local
 screenshots-auto/
 POMYSLY.md
+.planning/
 docs/slides/
 docs/STORE-LISTING.md
 .DS_Store
