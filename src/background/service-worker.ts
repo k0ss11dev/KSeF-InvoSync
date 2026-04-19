@@ -85,15 +85,10 @@ if (__TEST_BRIDGES__) {
 // when they open the popup and unlock, without waiting up to 30 min).
 
 chrome.alarms.onAlarm.addListener((alarm) => {
-  log("info", `[autosync-debug] onAlarm fired: name=${alarm.name}`);
   if (alarm.name !== AUTO_SYNC_ALARM_NAME) return;
-  void runBackgroundSyncIfReady()
-    .then((res) => {
-      log("info", `[autosync-debug] runBackgroundSyncIfReady → ${JSON.stringify(res)}`);
-    })
-    .catch((err) => {
-      log("warn", "onAlarm handler threw (non-fatal):", err);
-    });
+  void runBackgroundSyncIfReady().catch((err) => {
+    log("warn", "onAlarm handler threw (non-fatal):", err);
+  });
 });
 
 chrome.runtime.onStartup.addListener(() => {
@@ -123,14 +118,6 @@ chrome.idle.onStateChanged.addListener((newState) => {
 // here also handles the "enable flag was toggled while SW was asleep"
 // case (popup could, in theory, write directly to storage, though in
 // practice it goes through the message router below).
-void chrome.alarms.getAll().then((alarms) => {
-  log(
-    "info",
-    `[autosync-debug] SW wake — existing alarms: ${JSON.stringify(
-      alarms.map((a) => ({ name: a.name, period: a.periodInMinutes, inSec: Math.round((a.scheduledTime - Date.now()) / 1000) })),
-    )}`,
-  );
-});
 void ensureAlarmMatchesConfig().catch((err) => {
   log("warn", "initial ensureAlarmMatchesConfig failed:", err);
 });

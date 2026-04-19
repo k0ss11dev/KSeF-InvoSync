@@ -52,37 +52,21 @@ export const AUTO_SYNC_ALARM_NAME = "invo-sync.autoSync";
  */
 export async function ensureAlarmMatchesConfig(): Promise<void> {
   const enabled = await persistentConfig.getAutoSyncEnabled();
-  const existing = await chrome.alarms.get(AUTO_SYNC_ALARM_NAME);
   if (!enabled) {
     await chrome.alarms.clear(AUTO_SYNC_ALARM_NAME);
-    log("info", `[autosync-debug] alarm cleared (enabled=false, existed=${!!existing})`);
+    log("info", "Auto-sync alarm cleared");
     return;
   }
   const intervalMin = await persistentConfig.getAutoSyncInterval();
-  if (existing) {
-    const nextInSec = Math.round((existing.scheduledTime - Date.now()) / 1000);
-    log(
-      "info",
-      `[autosync-debug] existing alarm: period=${existing.periodInMinutes}min, next fires in ${nextInSec}s; config wants ${intervalMin}min`,
-    );
-  } else {
-    log("info", `[autosync-debug] no existing alarm; config wants ${intervalMin}min`);
-  }
+  const existing = await chrome.alarms.get(AUTO_SYNC_ALARM_NAME);
   if (existing && existing.periodInMinutes === intervalMin) {
-    log("info", "[autosync-debug] period matches → leave alarm alone");
     return;
   }
   await chrome.alarms.clear(AUTO_SYNC_ALARM_NAME);
   await chrome.alarms.create(AUTO_SYNC_ALARM_NAME, {
     periodInMinutes: intervalMin,
   });
-  const created = await chrome.alarms.get(AUTO_SYNC_ALARM_NAME);
-  log(
-    "info",
-    `Auto-sync alarm registered (requested ${intervalMin}min, Chrome set period=${created?.periodInMinutes}min, fires in ${
-      created ? Math.round((created.scheduledTime - Date.now()) / 1000) : "?"
-    }s)`,
-  );
+  log("info", `Auto-sync alarm registered (${intervalMin} min period)`);
 }
 
 /**
