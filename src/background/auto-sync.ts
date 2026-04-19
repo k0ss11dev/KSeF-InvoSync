@@ -43,26 +43,46 @@ export const AUTO_SYNC_ALARM_NAME = "invo-sync.autoSync";
  * config flag. Idempotent — safe to call on every SW wake, on popup toggle,
  * on runtime.onStartup, etc. Tests call it directly via a bridge.
  *
- * We always clear-then-create when enabling to avoid Chrome's "alarm with
- * the same name already exists, silently replaced" behaviour leaking a
- * stale period if the constant ever changes.
+ * Critical: if an alarm with the same name and same period already exists,
+ * leave it alone. Recreating it resets the timer to "fire in `periodInMinutes`
+ * from now". In MV3 the SW is killed after ~30 s idle and re-spawned by events
+ * (popup open, message, storage change). If we reset on every wake, short
+ * periods (1, 2 min) never actually fire — the alarm keeps getting bumped
+ * forward by a fresh SW spawn before it ever elapses.
  */
 export async function ensureAlarmMatchesConfig(): Promise<void> {
   const enabled = await persistentConfig.getAutoSyncEnabled();
-  if (enabled) {
-    // chrome.alarms.create replaces any existing alarm with the same name,
-    // so there's no need to clear first — but being explicit makes the
-    // intent obvious in logs and tests.
-    const intervalMin = await persistentConfig.getAutoSyncInterval();
+  const existing = await chrome.alarms.get(AUTO_SYNC_ALARM_NAME);
+  if (!enabled) {
     await chrome.alarms.clear(AUTO_SYNC_ALARM_NAME);
-    await chrome.alarms.create(AUTO_SYNC_ALARM_NAME, {
-      periodInMinutes: intervalMin,
-    });
-    log("info", `Auto-sync alarm registered (${intervalMin} min period)`);
-  } else {
-    await chrome.alarms.clear(AUTO_SYNC_ALARM_NAME);
-    log("info", "Auto-sync alarm cleared");
+    log("info", `[autosync-debug] alarm cleared (enabled=false, existed=${!!existing})`);
+    return;
   }
+  const intervalMin = await persistentConfig.getAutoSyncInterval();
+  if (existing) {
+    const nextInSec = Math.round((existing.scheduledTime - Date.now()) / 1000);
+    log(
+      "info",
+      `[autosync-debug] existing alarm: period=${existing.periodInMinutes}min, next fires in ${nextInSec}s; config wants ${intervalMin}min`,
+    );
+  } else {
+    log("info", `[autosync-debug] no existing alarm; config wants ${intervalMin}min`);
+  }
+  if (existing && existing.periodInMinutes === intervalMin) {
+    log("info", "[autosync-debug] period matches → leave alarm alone");
+    return;
+  }
+  await chrome.alarms.clear(AUTO_SYNC_ALARM_NAME);
+  await chrome.alarms.create(AUTO_SYNC_ALARM_NAME, {
+    periodInMinutes: intervalMin,
+  });
+  const created = await chrome.alarms.get(AUTO_SYNC_ALARM_NAME);
+  log(
+    "info",
+    `Auto-sync alarm registered (requested ${intervalMin}min, Chrome set period=${created?.periodInMinutes}min, fires in ${
+      created ? Math.round((created.scheduledTime - Date.now()) / 1000) : "?"
+    }s)`,
+  );
 }
 
 /**
