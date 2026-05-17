@@ -2,6 +2,7 @@
   "app_title": { "message": "KSeF InvoSync" },
   "env_badge_test": { "message": "\u015aROD. TESTOWE" },
   "env_badge_settings": { "message": "USTAWIENIA" },
+  "env_switch_title": { "message": "Prze\u0142\u0105cz \u015brodowisko KSeF" },
   "app_description": { "message": "Synchronizacja faktur z KSeF do Arkuszy Google. Auto-sync, feed faktur przychodzących, dashboard, powiadomienia. Bezpieczeństwo na pierwszym miejscu, bez serwera." },
 
   "section_google": { "message": "Google" },

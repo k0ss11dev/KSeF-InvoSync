@@ -12,6 +12,7 @@ import type {
   VaultStatus,
 } from "../shared/messages";
 import type { LastSyncStats, NotificationConfig } from "../storage/persistent-config";
+import { KSEF_ENVIRONMENTS, type KsefEnvironment } from "../storage/persistent-config";
 import { classifyError } from "../shared/errors";
 import MuiButton from "@mui/material/Button";
 import MuiCheckbox from "@mui/material/Checkbox";
@@ -65,12 +66,36 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
+import MuiMenu from "@mui/material/Menu";
 
 export function App() {
   const [view, setView] = useState<"main" | "settings">("main");
   const [envLabel, setEnvLabel] = useState("");
   const [envWebApp, setEnvWebApp] = useState("https://ap-test.ksef.mf.gov.pl");
+  const [env, setEnv] = useState<KsefEnvironment>("test");
+  const [envAnchor, setEnvAnchor] = useState<HTMLElement | null>(null);
+  const [prodConfirm, setProdConfirm] = useState(false);
   const [dark, setDark] = useState(false);
+
+  const applyEnv = async (next: KsefEnvironment) => {
+    setEnvAnchor(null);
+    setProdConfirm(false);
+    if (next === env) return;
+    const res = await send({ type: "ksef.setEnvironment", env: next });
+    if (!res.ok) return;
+    setEnv(next);
+    setEnvLabel(KSEF_ENVIRONMENTS[next].badge);
+    setEnvWebApp(KSEF_ENVIRONMENTS[next].webApp);
+  };
+
+  const onPickEnv = (next: KsefEnvironment) => {
+    if (next === "prod" && env !== "prod") {
+      setEnvAnchor(null);
+      setProdConfirm(true);
+      return;
+    }
+    void applyEnv(next);
+  };
 
   useEffect(() => {
     void chrome.storage.local.get("config.theme").then((r) => {
@@ -83,7 +108,8 @@ export function App() {
     });
     void send({ type: "ksef.getEnvironment" }).then((res) => {
       if (res.ok) {
-        const d = res.data as { badge: string; webApp: string };
+        const d = res.data as { env: KsefEnvironment; badge: string; webApp: string };
+        setEnv(d.env);
         setEnvLabel(d.badge);
         setEnvWebApp(d.webApp);
       }
@@ -108,7 +134,54 @@ export function App() {
         <MuiTypography variant="subtitle1" sx={{ fontWeight: 700, flex: 1, lineHeight: 1.2 }}>
           {t("app_title")}
         </MuiTypography>
-        <MuiChip size="small" color="warning" label={envLabel || "TEST"} />
+        <MuiChip
+          size="small"
+          color={env === "prod" ? "error" : "warning"}
+          label={envLabel || "TEST"}
+          onClick={(e) => setEnvAnchor(e.currentTarget)}
+          onDelete={(e) => setEnvAnchor(e.currentTarget as HTMLElement)}
+          deleteIcon={<ExpandMoreIcon sx={{ fontSize: 16 }} />}
+          title={t("env_switch_title")}
+          sx={{ cursor: "pointer" }}
+        />
+        <MuiMenu
+          anchorEl={envAnchor}
+          open={Boolean(envAnchor)}
+          onClose={() => setEnvAnchor(null)}
+        >
+          {(Object.keys(KSEF_ENVIRONMENTS) as KsefEnvironment[]).map((key) => (
+            <MuiMenuItem
+              key={key}
+              selected={key === env}
+              onClick={() => onPickEnv(key)}
+            >
+              <MuiStack>
+                <MuiTypography variant="body2" sx={{ fontWeight: 600 }}>
+                  {KSEF_ENVIRONMENTS[key].label}
+                </MuiTypography>
+                <MuiTypography variant="caption" color="text.secondary">
+                  {KSEF_ENVIRONMENTS[key].apiBase}
+                </MuiTypography>
+              </MuiStack>
+            </MuiMenuItem>
+          ))}
+        </MuiMenu>
+        <MuiDialog open={prodConfirm} onClose={() => setProdConfirm(false)}>
+          <MuiDialogTitle>{KSEF_ENVIRONMENTS.prod.label}</MuiDialogTitle>
+          <MuiDialogContent>
+            <MuiAlert severity="warning" sx={{ mt: 0.5 }}>
+              {t("options_ksef_env_prod_warning")}
+            </MuiAlert>
+          </MuiDialogContent>
+          <MuiDialogActions>
+            <MuiButton onClick={() => setProdConfirm(false)}>
+              {t("button_cancel")}
+            </MuiButton>
+            <MuiButton color="error" variant="contained" onClick={() => void applyEnv("prod")}>
+              {t("button_confirm")}
+            </MuiButton>
+          </MuiDialogActions>
+        </MuiDialog>
         <MuiIconButton
           size="small"
           onClick={() => {

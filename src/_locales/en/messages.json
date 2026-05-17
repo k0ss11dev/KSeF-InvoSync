@@ -2,6 +2,7 @@
   "app_title": { "message": "KSeF InvoSync" },
   "env_badge_test": { "message": "TEST ENV" },
   "env_badge_settings": { "message": "SETTINGS" },
+  "env_switch_title": { "message": "Switch KSeF environment" },
   "app_description": { "message": "Sync invoices from KSeF to Google Sheets. Auto-sync, incoming invoice feed, dashboard, notifications. Security-first, no backend." },
 
   "section_google": { "message": "Google" },
